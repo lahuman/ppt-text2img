@@ -47,7 +47,7 @@
         }
 
         img { max-width: 100%; display: block; }
-        a { -webkit-tap-highlight-color: transparent; }
+        a, button { -webkit-tap-highlight-color: transparent; }
         section[id] { scroll-margin-top: 88px; }
 
         .glass {
@@ -126,9 +126,7 @@
             background: rgba(255, 255, 255, 0.065);
         }
 
-        .balanced {
-            text-wrap: balance;
-        }
+        .balanced { text-wrap: balance; }
 
         .mobile-nav {
             position: absolute;
@@ -145,7 +143,7 @@
         }
 
         .mobile-nav.open {
-            max-height: 360px;
+            max-height: 520px;
             transform: translateY(0);
             opacity: 1;
             pointer-events: auto;
@@ -155,19 +153,49 @@
             padding-bottom: calc(env(safe-area-inset-bottom) + 14px);
         }
 
-        .page-bottom-space {
-            height: 92px;
+        .page-bottom-space { height: 92px; }
+
+        .lang-switch {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem;
+            border-radius: 9999px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.04);
+        }
+
+        .lang-btn {
+            border: 0;
+            background: transparent;
+            color: #b8c7df;
+            font-size: 0.78rem;
+            font-weight: 700;
+            border-radius: 9999px;
+            padding: 0.5rem 0.85rem;
+            cursor: pointer;
+            transition: all 180ms ease;
+        }
+
+        .lang-btn.active {
+            background: #ffffff;
+            color: #08111d;
+            box-shadow: 0 8px 20px rgba(255,255,255,0.12);
+        }
+
+        .lang-note {
+            font-size: 0.72rem;
+            color: #93a5c6;
         }
 
         @media (max-width: 767px) {
-            .mobile-card-tight { padding: 18px; }
             .hero-copy { font-size: clamp(2rem, 8.6vw, 3.2rem); }
             .hero-subcopy { font-size: 1rem; line-height: 1.8; }
             .section-title { font-size: clamp(1.9rem, 7vw, 2.5rem); }
             .section-pad { padding-top: 3.5rem; padding-bottom: 3.5rem; }
-            .stack-gap { gap: 0.9rem; }
             .mini-stat { min-height: 88px; }
             .desktop-download { display: none; }
+            .desktop-lang-note { display: none; }
         }
 
         @media (min-width: 768px) {
@@ -183,24 +211,31 @@
         <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-[72px] gap-3">
                 <a href="#top" class="flex items-center gap-3 min-w-0">
-                    <img src="./ppt-txt2img.png" alt="PPT Text to Image 아이콘" class="w-10 h-10 rounded-2xl soft-ring object-cover shrink-0" />
+                    <img src="./ppt-txt2img.png" alt="PPT Text to Image icon" class="w-10 h-10 rounded-2xl soft-ring object-cover shrink-0" />
                     <div class="min-w-0">
                         <div class="text-xs sm:text-sm text-slate-300">lahuman</div>
-                        <div class="text-sm sm:text-base font-bold tracking-tight text-white truncate">PPT 텍스트-이미지 변환기</div>
+                        <div class="text-sm sm:text-base font-bold tracking-tight text-white truncate" data-i18n="brandTitle">PPT 텍스트-이미지 변환기</div>
                     </div>
                 </a>
 
                 <nav class="hidden md:flex items-center gap-7 text-sm text-slate-300">
-                    <a href="#overview" class="hover:text-white transition">개요</a>
-                    <a href="#features" class="hover:text-white transition">기능</a>
-                    <a href="#workflow" class="hover:text-white transition">사용 흐름</a>
-                    <a href="#requirements" class="hover:text-white transition">실행 환경</a>
-                    <a href="#download" class="hover:text-white transition">다운로드</a>
+                    <a href="#overview" class="hover:text-white transition" data-i18n="navOverview">개요</a>
+                    <a href="#features" class="hover:text-white transition" data-i18n="navFeatures">기능</a>
+                    <a href="#workflow" class="hover:text-white transition" data-i18n="navWorkflow">사용 흐름</a>
+                    <a href="#requirements" class="hover:text-white transition" data-i18n="navRequirements">실행 환경</a>
+                    <a href="#download" class="hover:text-white transition" data-i18n="navDownload">다운로드</a>
                 </nav>
 
                 <div class="flex items-center gap-2 shrink-0">
+                    <div class="hidden sm:flex flex-col items-end gap-1">
+                        <div class="lang-switch" role="group" aria-label="Language switcher">
+                            <button type="button" class="lang-btn" data-lang-switch="ko">KR</button>
+                            <button type="button" class="lang-btn" data-lang-switch="en">EN</button>
+                        </div>
+                        <div class="lang-note desktop-lang-note" data-i18n="langNote">한국어 / English</div>
+                    </div>
                     <a href="#download" class="desktop-download inline-flex items-center gap-2 rounded-full bg-white text-slate-900 px-4 py-2 text-sm font-semibold hover:bg-slate-100 transition">
-                        무료 다운로드
+                        <span data-i18n="headerDownload">무료 다운로드</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14" />
                         </svg>
@@ -214,12 +249,18 @@
             </div>
 
             <div id="mobileNav" class="mobile-only mobile-nav pb-4">
-                <div class="glass rounded-3xl p-3 space-y-1">
-                    <a href="#overview" class="block rounded-2xl px-4 py-3 text-slate-200 hover:bg-white/5">개요</a>
-                    <a href="#features" class="block rounded-2xl px-4 py-3 text-slate-200 hover:bg-white/5">기능</a>
-                    <a href="#workflow" class="block rounded-2xl px-4 py-3 text-slate-200 hover:bg-white/5">사용 흐름</a>
-                    <a href="#requirements" class="block rounded-2xl px-4 py-3 text-slate-200 hover:bg-white/5">실행 환경</a>
-                    <a href="#download" class="block rounded-2xl px-4 py-3 text-white bg-sky-400/15 border border-sky-300/20">다운로드</a>
+                <div class="glass rounded-3xl p-3 space-y-2">
+                    <div class="px-2 pb-1">
+                        <div class="lang-switch w-full justify-center" role="group" aria-label="Language switcher mobile">
+                            <button type="button" class="lang-btn" data-lang-switch="ko">KR</button>
+                            <button type="button" class="lang-btn" data-lang-switch="en">EN</button>
+                        </div>
+                    </div>
+                    <a href="#overview" class="block rounded-2xl px-4 py-3 text-slate-200 hover:bg-white/5" data-i18n="navOverview">개요</a>
+                    <a href="#features" class="block rounded-2xl px-4 py-3 text-slate-200 hover:bg-white/5" data-i18n="navFeatures">기능</a>
+                    <a href="#workflow" class="block rounded-2xl px-4 py-3 text-slate-200 hover:bg-white/5" data-i18n="navWorkflow">사용 흐름</a>
+                    <a href="#requirements" class="block rounded-2xl px-4 py-3 text-slate-200 hover:bg-white/5" data-i18n="navRequirements">실행 환경</a>
+                    <a href="#download" class="block rounded-2xl px-4 py-3 text-white bg-sky-400/15 border border-sky-300/20" data-i18n="navDownload">다운로드</a>
                 </div>
             </div>
         </div>
@@ -232,29 +273,26 @@
                     <div>
                         <div class="inline-flex items-center gap-2 rounded-full pill px-3.5 py-2 text-[11px] sm:text-sm text-sky-100 mb-5 leading-5">
                             <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
-                            <span>Windows 10/11 · PowerPoint 기반 · 오프라인 변환</span>
+                            <span data-i18n="heroPill">Windows 10/11 · PowerPoint 기반 · 오프라인 변환</span>
                         </div>
 
-                        <h1 class="hero-copy balanced text-white font-black leading-[1.05] tracking-tight max-w-3xl">
-                            PPT 텍스트,
-                            <span class="gradient-text">원본 배치 그대로</span>
-                            이미지로 변환
+                        <h1 class="hero-copy balanced text-white font-black leading-[1.05] tracking-tight max-w-3xl" data-i18n-html="heroTitle">
+                            PPT 텍스트,<br><span class="gradient-text">원본 배치 그대로</span><br>이미지로 변환
                         </h1>
 
-                        <p class="hero-subcopy mt-5 text-slate-300 max-w-2xl">
-                            다른 PC에서 열었을 때 폰트가 깨지거나 줄바꿈이 달라지는 문제를 줄이기 위해,
-                            슬라이드 내부 텍스트를 고화질 이미지로 바꾸어 전달하는 데 초점을 맞춘 도구입니다.
+                        <p class="hero-subcopy mt-5 text-slate-300 max-w-2xl" data-i18n="heroSubtitle">
+                            다른 PC에서 열었을 때 폰트가 깨지거나 줄바꿈이 달라지는 문제를 줄이기 위해, 슬라이드 내부 텍스트를 고화질 이미지로 바꾸어 전달하는 데 초점을 맞춘 도구입니다.
                         </p>
 
                         <div class="mt-7 flex flex-col sm:flex-row gap-3 sm:gap-4">
                             <a href="#download" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-400 text-slate-950 px-5 py-4 font-bold hover:bg-sky-300 transition shadow-2xl shadow-sky-500/20 w-full sm:w-auto min-h-[56px]">
-                                지금 다운로드
+                                <span data-i18n="heroPrimaryBtn">지금 다운로드</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14" />
                                 </svg>
                             </a>
                             <a href="https://github.com/lahuman/ppt-text2img" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/5 px-5 py-4 font-semibold text-white hover:bg-white/10 transition w-full sm:w-auto min-h-[56px]">
-                                GitHub 보기
+                                <span data-i18n="heroSecondaryBtn">GitHub 보기</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 115.656 5.656l-1.5 1.5" />
                                 </svg>
@@ -264,15 +302,15 @@
                         <div class="mt-7 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
                             <div class="glass rounded-2xl px-4 py-4 text-slate-200 mini-stat">
                                 <div class="text-2xl font-black text-white">1:1</div>
-                                <div class="mt-1 text-slate-400 text-sm">디자인 보존 중심</div>
+                                <div class="mt-1 text-slate-400 text-sm" data-i18n="stat1">디자인 보존 중심</div>
                             </div>
                             <div class="glass rounded-2xl px-4 py-4 text-slate-200 mini-stat">
                                 <div class="text-2xl font-black text-white">100%</div>
-                                <div class="mt-1 text-slate-400 text-sm">로컬 PC 처리</div>
+                                <div class="mt-1 text-slate-400 text-sm" data-i18n="stat2">로컬 PC 처리</div>
                             </div>
                             <div class="glass rounded-2xl px-4 py-4 text-slate-200 mini-stat col-span-2 sm:col-span-1">
                                 <div class="text-2xl font-black text-white">V1.0</div>
-                                <div class="mt-1 text-slate-400 text-sm">GitHub 릴리스 제공</div>
+                                <div class="mt-1 text-slate-400 text-sm" data-i18n="stat3">GitHub 릴리스 제공</div>
                             </div>
                         </div>
                     </div>
@@ -282,31 +320,31 @@
                             <div class="rounded-[22px] border border-white/10 bg-slate-950/70 p-4 sm:p-5">
                                 <div class="flex items-start justify-between gap-3 mb-4">
                                     <div class="flex items-center gap-3 min-w-0">
-                                        <img src="./ppt-txt2img.png" alt="프로그램 아이콘" class="w-12 h-12 rounded-2xl object-cover soft-ring shrink-0" />
+                                        <img src="./ppt-txt2img.png" alt="App icon" class="w-12 h-12 rounded-2xl object-cover soft-ring shrink-0" />
                                         <div class="min-w-0">
                                             <p class="text-sm text-slate-400">Preview</p>
                                             <p class="text-base sm:text-lg font-bold text-white truncate">PPT Text to Image Converter</p>
                                         </div>
                                     </div>
-                                    <div class="rounded-full bg-emerald-400/15 text-emerald-300 px-3 py-1 text-[11px] sm:text-xs font-semibold leading-5 whitespace-nowrap">배포용 PPT 대응</div>
+                                    <div class="rounded-full bg-emerald-400/15 text-emerald-300 px-3 py-1 text-[11px] sm:text-xs font-semibold leading-5 whitespace-nowrap" data-i18n="previewBadge">배포용 PPT 대응</div>
                                 </div>
 
                                 <div class="rounded-[20px] overflow-hidden border border-white/10 bg-slate-900">
-                                    <img src="./ppt-txt2img.png" alt="PPT 텍스트를 이미지로 바꾸는 프로그램 대표 이미지" class="w-full h-auto object-cover" />
+                                    <img src="./ppt-txt2img.png" alt="PPT text to image app preview" class="w-full h-auto object-cover" />
                                 </div>
 
                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
                                     <div class="rounded-2xl border border-white/8 bg-white/5 p-4">
-                                        <div class="text-xs text-slate-400">문제</div>
-                                        <div class="mt-2 font-semibold text-white">폰트 유실</div>
+                                        <div class="text-xs text-slate-400" data-i18n="problemLabel">문제</div>
+                                        <div class="mt-2 font-semibold text-white" data-i18n="problemValue">폰트 유실</div>
                                     </div>
                                     <div class="rounded-2xl border border-white/8 bg-white/5 p-4">
-                                        <div class="text-xs text-slate-400">해결</div>
-                                        <div class="mt-2 font-semibold text-white">텍스트 이미지화</div>
+                                        <div class="text-xs text-slate-400" data-i18n="solutionLabel">해결</div>
+                                        <div class="mt-2 font-semibold text-white" data-i18n="solutionValue">텍스트 이미지화</div>
                                     </div>
                                     <div class="rounded-2xl border border-white/8 bg-white/5 p-4">
-                                        <div class="text-xs text-slate-400">결과</div>
-                                        <div class="mt-2 font-semibold text-white">레이아웃 유지</div>
+                                        <div class="text-xs text-slate-400" data-i18n="resultLabel">결과</div>
+                                        <div class="mt-2 font-semibold text-white" data-i18n="resultValue">레이아웃 유지</div>
                                     </div>
                                 </div>
                             </div>
@@ -321,16 +359,14 @@
                 <div class="grid lg:grid-cols-[1.2fr_0.8fr] gap-4 sm:gap-6 items-stretch">
                     <div class="info-card glass rounded-[28px] p-6 sm:p-10">
                         <div class="text-xs sm:text-sm uppercase tracking-[0.2em] text-sky-200">Overview</div>
-                        <h2 class="section-title mt-4 font-black tracking-tight text-white">왜 필요한가요?</h2>
-                        <p class="mt-5 text-slate-300 leading-8 text-[15px] sm:text-[17px]">
-                            발표용 또는 배포용 PPT는 열어보는 PC 환경에 따라 폰트, 줄바꿈, 여백, 정렬이 달라질 수 있습니다.
-                            이 프로젝트는 그런 차이로 인해 원본 의도가 무너지는 상황을 줄이기 위해,
-                            파워포인트 내부 텍스트를 이미지로 바꾸고 원래 위치에 맞춰 재배치하는 방식으로 동작합니다.
+                        <h2 class="section-title mt-4 font-black tracking-tight text-white" data-i18n="overviewTitle">왜 필요한가요?</h2>
+                        <p class="mt-5 text-slate-300 leading-8 text-[15px] sm:text-[17px]" data-i18n="overviewBody">
+                            발표용 또는 배포용 PPT는 열어보는 PC 환경에 따라 폰트, 줄바꿈, 여백, 정렬이 달라질 수 있습니다. 이 프로젝트는 그런 차이로 인해 원본 의도가 무너지는 상황을 줄이기 위해, 파워포인트 내부 텍스트를 이미지로 바꾸고 원래 위치에 맞춰 재배치하는 방식으로 동작합니다.
                         </p>
                         <div class="mt-6 flex flex-wrap gap-2.5 sm:gap-3 text-sm text-slate-200">
-                            <span class="pill rounded-full px-4 py-2">배포용 문서 안정성</span>
-                            <span class="pill rounded-full px-4 py-2">레이아웃 보존</span>
-                            <span class="pill rounded-full px-4 py-2">사내 문서 오프라인 처리</span>
+                            <span class="pill rounded-full px-4 py-2" data-i18n="overviewTag1">배포용 문서 안정성</span>
+                            <span class="pill rounded-full px-4 py-2" data-i18n="overviewTag2">레이아웃 보존</span>
+                            <span class="pill rounded-full px-4 py-2" data-i18n="overviewTag3">사내 문서 오프라인 처리</span>
                         </div>
                     </div>
 
@@ -338,16 +374,16 @@
                         <div class="text-xs sm:text-sm uppercase tracking-[0.2em] text-emerald-200">Value</div>
                         <div class="mt-6 space-y-4 sm:space-y-5">
                             <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
-                                <div class="text-sm text-slate-400">환경 차이 대응</div>
-                                <div class="mt-1 text-lg sm:text-xl font-bold text-white">폰트 설치 여부 영향 축소</div>
+                                <div class="text-sm text-slate-400" data-i18n="valueLabel1">환경 차이 대응</div>
+                                <div class="mt-1 text-lg sm:text-xl font-bold text-white" data-i18n="valueTitle1">폰트 설치 여부 영향 축소</div>
                             </div>
                             <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
-                                <div class="text-sm text-slate-400">업무 효율</div>
-                                <div class="mt-1 text-lg sm:text-xl font-bold text-white">슬라이드 다수도 한 번에 처리</div>
+                                <div class="text-sm text-slate-400" data-i18n="valueLabel2">업무 효율</div>
+                                <div class="mt-1 text-lg sm:text-xl font-bold text-white" data-i18n="valueTitle2">슬라이드 다수도 한 번에 처리</div>
                             </div>
                             <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
-                                <div class="text-sm text-slate-400">보안성</div>
-                                <div class="mt-1 text-lg sm:text-xl font-bold text-white">외부 업로드 없는 로컬 실행</div>
+                                <div class="text-sm text-slate-400" data-i18n="valueLabel3">보안성</div>
+                                <div class="mt-1 text-lg sm:text-xl font-bold text-white" data-i18n="valueTitle3">외부 업로드 없는 로컬 실행</div>
                             </div>
                         </div>
                     </div>
@@ -359,52 +395,43 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="max-w-3xl">
                     <div class="text-xs sm:text-sm uppercase tracking-[0.2em] text-violet-200">Features</div>
-                    <h2 class="section-title mt-4 font-black tracking-tight text-white">설명보다 결과가 먼저 보이는 기능 구성</h2>
-                    <p class="mt-5 text-slate-300 leading-8 text-[15px] sm:text-[17px]">
-                        기존 페이지의 간단한 히어로와 3개 기능 카드 구조는 유지하되, 제품 이해와 신뢰도를 높일 수 있도록
-                        문제-해결-효과 흐름으로 재구성했습니다.
+                    <h2 class="section-title mt-4 font-black tracking-tight text-white" data-i18n="featuresTitle">설명보다 결과가 먼저 보이는 기능 구성</h2>
+                    <p class="mt-5 text-slate-300 leading-8 text-[15px] sm:text-[17px]" data-i18n="featuresBody">
+                        기존 페이지의 간단한 히어로와 3개 기능 카드 구조는 유지하되, 제품 이해와 신뢰도를 높일 수 있도록 문제-해결-효과 흐름으로 재구성했습니다.
                     </p>
                 </div>
 
                 <div class="mt-8 sm:mt-10 grid md:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
                     <article class="feature-card glass rounded-[24px] p-5 sm:p-6">
                         <div class="w-12 h-12 rounded-2xl bg-sky-400/15 flex items-center justify-center text-sky-300 mb-5">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h10" />
-                            </svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h10" /></svg>
                         </div>
-                        <h3 class="text-lg sm:text-xl font-bold text-white">텍스트 자동 변환</h3>
-                        <p class="mt-3 text-slate-400 leading-7 text-[15px] sm:text-base">슬라이드 내부 텍스트를 이미지로 바꾸어 시각적 결과를 고정하는 데 초점을 맞췄습니다.</p>
+                        <h3 class="text-lg sm:text-xl font-bold text-white" data-i18n="feature1Title">텍스트 자동 변환</h3>
+                        <p class="mt-3 text-slate-400 leading-7 text-[15px] sm:text-base" data-i18n="feature1Body">슬라이드 내부 텍스트를 이미지로 바꾸어 시각적 결과를 고정하는 데 초점을 맞췄습니다.</p>
                     </article>
 
                     <article class="feature-card glass rounded-[24px] p-5 sm:p-6">
                         <div class="w-12 h-12 rounded-2xl bg-emerald-400/15 flex items-center justify-center text-emerald-300 mb-5">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h10M5 5h14v14H5z" />
-                            </svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h10M5 5h14v14H5z" /></svg>
                         </div>
-                        <h3 class="text-lg sm:text-xl font-bold text-white">정밀 배치 유지</h3>
-                        <p class="mt-3 text-slate-400 leading-7 text-[15px] sm:text-base">텍스트 위치와 크기, 회전 상태를 고려해 변환 후에도 원래 배치와 유사하게 유지합니다.</p>
+                        <h3 class="text-lg sm:text-xl font-bold text-white" data-i18n="feature2Title">정밀 배치 유지</h3>
+                        <p class="mt-3 text-slate-400 leading-7 text-[15px] sm:text-base" data-i18n="feature2Body">텍스트 위치와 크기, 회전 상태를 고려해 변환 후에도 원래 배치와 유사하게 유지합니다.</p>
                     </article>
 
                     <article class="feature-card glass rounded-[24px] p-5 sm:p-6">
                         <div class="w-12 h-12 rounded-2xl bg-violet-400/15 flex items-center justify-center text-violet-300 mb-5">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         </div>
-                        <h3 class="text-lg sm:text-xl font-bold text-white">진행 상태 표시</h3>
-                        <p class="mt-3 text-slate-400 leading-7 text-[15px] sm:text-base">변환 중인 슬라이드와 전체 진행 상황을 확인할 수 있어 대량 처리 시에도 흐름을 파악하기 쉽습니다.</p>
+                        <h3 class="text-lg sm:text-xl font-bold text-white" data-i18n="feature3Title">진행 상태 표시</h3>
+                        <p class="mt-3 text-slate-400 leading-7 text-[15px] sm:text-base" data-i18n="feature3Body">변환 중인 슬라이드와 전체 진행 상황을 확인할 수 있어 대량 처리 시에도 흐름을 파악하기 쉽습니다.</p>
                     </article>
 
                     <article class="feature-card glass rounded-[24px] p-5 sm:p-6">
                         <div class="w-12 h-12 rounded-2xl bg-pink-400/15 flex items-center justify-center text-pink-300 mb-5">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-2.761 0-5 2.239-5 5m5-5c2.761 0 5 2.239 5 5m-5-5V3m0 15v3m8-8h3M1 13h3" />
-                            </svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-2.761 0-5 2.239-5 5m5-5c2.761 0 5 2.239 5 5m-5-5V3m0 15v3m8-8h3M1 13h3" /></svg>
                         </div>
-                        <h3 class="text-lg sm:text-xl font-bold text-white">오프라인 실행</h3>
-                        <p class="mt-3 text-slate-400 leading-7 text-[15px] sm:text-base">중요한 문서를 웹에 올리지 않고 로컬 PC 안에서만 처리할 수 있어 보안 관점에서도 부담이 적습니다.</p>
+                        <h3 class="text-lg sm:text-xl font-bold text-white" data-i18n="feature4Title">오프라인 실행</h3>
+                        <p class="mt-3 text-slate-400 leading-7 text-[15px] sm:text-base" data-i18n="feature4Body">중요한 문서를 웹에 올리지 않고 로컬 PC 안에서만 처리할 수 있어 보안 관점에서도 부담이 적습니다.</p>
                     </article>
                 </div>
             </div>
@@ -413,22 +440,22 @@
         <section id="workflow" class="section-pad">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-xs sm:text-sm uppercase tracking-[0.2em] text-emerald-200">Workflow</div>
-                <h2 class="section-title mt-4 font-black tracking-tight text-white">사용 흐름은 단순하게</h2>
+                <h2 class="section-title mt-4 font-black tracking-tight text-white" data-i18n="workflowTitle">사용 흐름은 단순하게</h2>
                 <div class="mt-8 sm:mt-10 grid lg:grid-cols-3 gap-4 sm:gap-5">
                     <article class="step-card glass rounded-[24px] p-6 sm:p-7">
                         <div class="text-sky-300 text-sm font-semibold">STEP 01</div>
-                        <h3 class="mt-3 text-xl sm:text-2xl font-bold text-white">PPT 파일 선택</h3>
-                        <p class="mt-3 text-slate-400 leading-7 text-[15px] sm:text-base">프로그램 실행 후 변환할 파워포인트 파일을 선택합니다.</p>
+                        <h3 class="mt-3 text-xl sm:text-2xl font-bold text-white" data-i18n="step1Title">PPT 파일 선택</h3>
+                        <p class="mt-3 text-slate-400 leading-7 text-[15px] sm:text-base" data-i18n="step1Body">프로그램 실행 후 변환할 파워포인트 파일을 선택합니다.</p>
                     </article>
                     <article class="step-card glass rounded-[24px] p-6 sm:p-7">
                         <div class="text-sky-300 text-sm font-semibold">STEP 02</div>
-                        <h3 class="mt-3 text-xl sm:text-2xl font-bold text-white">텍스트 이미지 변환</h3>
-                        <p class="mt-3 text-slate-400 leading-7 text-[15px] sm:text-base">파워포인트 엔진을 이용해 슬라이드 내부 텍스트를 이미지로 바꿉니다.</p>
+                        <h3 class="mt-3 text-xl sm:text-2xl font-bold text-white" data-i18n="step2Title">텍스트 이미지 변환</h3>
+                        <p class="mt-3 text-slate-400 leading-7 text-[15px] sm:text-base" data-i18n="step2Body">파워포인트 엔진을 이용해 슬라이드 내부 텍스트를 이미지로 바꿉니다.</p>
                     </article>
                     <article class="step-card glass rounded-[24px] p-6 sm:p-7">
                         <div class="text-sky-300 text-sm font-semibold">STEP 03</div>
-                        <h3 class="mt-3 text-xl sm:text-2xl font-bold text-white">변환본 저장</h3>
-                        <p class="mt-3 text-slate-400 leading-7 text-[15px] sm:text-base">원본 파일 폴더에 결과물이 생성되어 바로 확인하고 전달할 수 있습니다.</p>
+                        <h3 class="mt-3 text-xl sm:text-2xl font-bold text-white" data-i18n="step3Title">변환본 저장</h3>
+                        <p class="mt-3 text-slate-400 leading-7 text-[15px] sm:text-base" data-i18n="step3Body">원본 파일 폴더에 결과물이 생성되어 바로 확인하고 전달할 수 있습니다.</p>
                     </article>
                 </div>
             </div>
@@ -439,27 +466,27 @@
                 <div class="grid lg:grid-cols-2 gap-4 sm:gap-6">
                     <div class="glass rounded-[28px] p-6 sm:p-10">
                         <div class="text-xs sm:text-sm uppercase tracking-[0.2em] text-sky-200">Requirements</div>
-                        <h2 class="section-title mt-4 font-black tracking-tight text-white">실행 환경</h2>
+                        <h2 class="section-title mt-4 font-black tracking-tight text-white" data-i18n="requirementsTitle">실행 환경</h2>
                         <div class="mt-6 space-y-4 text-slate-300">
                             <div class="rounded-2xl border border-white/10 bg-white/5 p-5 flex items-start gap-4">
                                 <div class="w-10 h-10 rounded-xl bg-sky-400/15 flex items-center justify-center text-sky-300 shrink-0">1</div>
                                 <div>
-                                    <div class="font-bold text-white">Windows 10 / 11</div>
-                                    <p class="mt-1 text-slate-400">Windows 환경에서 실행되는 데스크톱 도구입니다.</p>
+                                    <div class="font-bold text-white" data-i18n="req1Title">Windows 10 / 11</div>
+                                    <p class="mt-1 text-slate-400" data-i18n="req1Body">Windows 환경에서 실행되는 데스크톱 도구입니다.</p>
                                 </div>
                             </div>
                             <div class="rounded-2xl border border-white/10 bg-white/5 p-5 flex items-start gap-4">
                                 <div class="w-10 h-10 rounded-xl bg-emerald-400/15 flex items-center justify-center text-emerald-300 shrink-0">2</div>
                                 <div>
-                                    <div class="font-bold text-white">Microsoft PowerPoint 설치</div>
-                                    <p class="mt-1 text-slate-400">실제 파워포인트 엔진을 활용하는 방식이므로 정식 설치 버전이 필요합니다.</p>
+                                    <div class="font-bold text-white" data-i18n="req2Title">Microsoft PowerPoint 설치</div>
+                                    <p class="mt-1 text-slate-400" data-i18n="req2Body">실제 파워포인트 엔진을 활용하는 방식이므로 정식 설치 버전이 필요합니다.</p>
                                 </div>
                             </div>
                             <div class="rounded-2xl border border-white/10 bg-white/5 p-5 flex items-start gap-4">
                                 <div class="w-10 h-10 rounded-xl bg-violet-400/15 flex items-center justify-center text-violet-300 shrink-0">3</div>
                                 <div>
-                                    <div class="font-bold text-white">로컬 실행 환경</div>
-                                    <p class="mt-1 text-slate-400">문서를 외부 서버에 올리지 않고 PC 내부에서 작업합니다.</p>
+                                    <div class="font-bold text-white" data-i18n="req3Title">로컬 실행 환경</div>
+                                    <p class="mt-1 text-slate-400" data-i18n="req3Body">문서를 외부 서버에 올리지 않고 PC 내부에서 작업합니다.</p>
                                 </div>
                             </div>
                         </div>
@@ -467,19 +494,19 @@
 
                     <div class="glass rounded-[28px] p-6 sm:p-10">
                         <div class="text-xs sm:text-sm uppercase tracking-[0.2em] text-violet-200">FAQ</div>
-                        <h2 class="section-title mt-4 font-black tracking-tight text-white">자주 궁금한 점</h2>
+                        <h2 class="section-title mt-4 font-black tracking-tight text-white" data-i18n="faqTitle">자주 궁금한 점</h2>
                         <div class="mt-6 space-y-4">
                             <div class="faq-card rounded-2xl border border-white/10 bg-white/5 p-5">
-                                <h3 class="font-bold text-white">웹 서비스인가요?</h3>
-                                <p class="mt-2 text-slate-400 leading-7 text-[15px] sm:text-base">아니요. Windows에서 실행하는 프로그램 형태이며, 로컬에서 처리하는 흐름에 가깝습니다.</p>
+                                <h3 class="font-bold text-white" data-i18n="faq1Q">웹 서비스인가요?</h3>
+                                <p class="mt-2 text-slate-400 leading-7 text-[15px] sm:text-base" data-i18n="faq1A">아니요. Windows에서 실행하는 프로그램 형태이며, 로컬에서 처리하는 흐름에 가깝습니다.</p>
                             </div>
                             <div class="faq-card rounded-2xl border border-white/10 bg-white/5 p-5">
-                                <h3 class="font-bold text-white">왜 텍스트를 이미지로 바꾸나요?</h3>
-                                <p class="mt-2 text-slate-400 leading-7 text-[15px] sm:text-base">다른 PC에서 폰트가 없거나 렌더링이 달라졌을 때 생길 수 있는 시각 차이를 줄이기 위해서입니다.</p>
+                                <h3 class="font-bold text-white" data-i18n="faq2Q">왜 텍스트를 이미지로 바꾸나요?</h3>
+                                <p class="mt-2 text-slate-400 leading-7 text-[15px] sm:text-base" data-i18n="faq2A">다른 PC에서 폰트가 없거나 렌더링이 달라졌을 때 생길 수 있는 시각 차이를 줄이기 위해서입니다.</p>
                             </div>
                             <div class="faq-card rounded-2xl border border-white/10 bg-white/5 p-5">
-                                <h3 class="font-bold text-white">보안 문서에도 쓸 수 있나요?</h3>
-                                <p class="mt-2 text-slate-400 leading-7 text-[15px] sm:text-base">문서를 외부 웹서비스에 업로드하지 않는 로컬 처리 방식이어서 내부 문서 활용에 유리합니다.</p>
+                                <h3 class="font-bold text-white" data-i18n="faq3Q">보안 문서에도 쓸 수 있나요?</h3>
+                                <p class="mt-2 text-slate-400 leading-7 text-[15px] sm:text-base" data-i18n="faq3A">문서를 외부 웹서비스에 업로드하지 않는 로컬 처리 방식이어서 내부 문서 활용에 유리합니다.</p>
                             </div>
                         </div>
                     </div>
@@ -493,33 +520,28 @@
                     <div class="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top,rgba(96,165,250,0.18),transparent_36%)]"></div>
                     <div class="relative">
                         <div class="inline-flex items-center gap-3 rounded-full pill px-4 py-2 text-xs sm:text-sm text-slate-200 leading-5 max-w-full">
-                            <img src="./ppt-txt2img.png" alt="앱 아이콘" class="w-6 h-6 rounded-lg object-cover shrink-0" />
-                            <span>PPT 내부 텍스트를 이미지로 변환하는 Windows 도구</span>
+                            <img src="./ppt-txt2img.png" alt="App icon" class="w-6 h-6 rounded-lg object-cover shrink-0" />
+                            <span data-i18n="downloadPill">PPT 내부 텍스트를 이미지로 변환하는 Windows 도구</span>
                         </div>
-                        <h2 class="section-title mt-6 font-black tracking-tight text-white">모바일에서도 바로 이해되고, 바로 내려받도록</h2>
-                        <p class="mt-5 text-slate-300 text-base sm:text-lg leading-8 max-w-3xl mx-auto">
-                            작은 화면에서도 카드가 넘치지 않도록 간격과 폭을 다듬고,
-                            다운로드 동선을 상단 메뉴와 하단 고정 버튼 양쪽에서 접근할 수 있게 정리했습니다.
+                        <h2 class="section-title mt-6 font-black tracking-tight text-white" data-i18n="downloadTitle">모바일에서도 바로 이해되고, 바로 내려받도록</h2>
+                        <p class="mt-5 text-slate-300 text-base sm:text-lg leading-8 max-w-3xl mx-auto" data-i18n="downloadBody">
+                            작은 화면에서도 카드가 넘치지 않도록 간격과 폭을 다듬고, 다운로드 동선을 상단 메뉴와 하단 고정 버튼 양쪽에서 접근할 수 있게 정리했습니다.
                         </p>
 
                         <div class="mt-8 sm:mt-10 max-w-xl mx-auto rounded-[24px] sm:rounded-[28px] border border-white/10 bg-slate-950/55 p-5 sm:p-8">
-                            <img src="./ppt-txt2img.png" alt="앱 아이콘" class="w-20 h-20 rounded-[24px] mx-auto object-cover soft-ring" />
+                            <img src="./ppt-txt2img.png" alt="App icon" class="w-20 h-20 rounded-[24px] mx-auto object-cover soft-ring" />
                             <h3 class="mt-5 text-2xl font-bold text-white">ppt-txt2img.exe</h3>
-                            <p class="mt-2 text-slate-400">Windows 전용 실행 파일 · GitHub Release 배포</p>
+                            <p class="mt-2 text-slate-400" data-i18n="downloadCardSub">Windows 전용 실행 파일 · GitHub Release 배포</p>
 
                             <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                                <div class="rounded-2xl border border-white/10 bg-white/5 p-4 text-slate-300">Windows 10/11</div>
-                                <div class="rounded-2xl border border-white/10 bg-white/5 p-4 text-slate-300">PowerPoint 필요</div>
-                                <div class="rounded-2xl border border-white/10 bg-white/5 p-4 text-slate-300">로컬 실행</div>
+                                <div class="rounded-2xl border border-white/10 bg-white/5 p-4 text-slate-300" data-i18n="downloadTag1">Windows 10/11</div>
+                                <div class="rounded-2xl border border-white/10 bg-white/5 p-4 text-slate-300" data-i18n="downloadTag2">PowerPoint 필요</div>
+                                <div class="rounded-2xl border border-white/10 bg-white/5 p-4 text-slate-300" data-i18n="downloadTag3">로컬 실행</div>
                             </div>
 
                             <div class="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-                                <a href="https://github.com/lahuman/ppt-text2img/releases/download/1.0/ppt-txt2img.exe" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-white text-slate-950 px-6 py-4 font-bold hover:bg-slate-100 transition min-h-[56px] w-full sm:w-auto">
-                                    EXE 다운로드
-                                </a>
-                                <a href="https://github.com/lahuman/ppt-text2img/releases" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-semibold text-white hover:bg-white/10 transition min-h-[56px] w-full sm:w-auto">
-                                    릴리스 보기
-                                </a>
+                                <a href="https://github.com/lahuman/ppt-text2img/releases/download/1.0/ppt-txt2img.exe" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-white text-slate-950 px-6 py-4 font-bold hover:bg-slate-100 transition min-h-[56px] w-full sm:w-auto" data-i18n="downloadExe">EXE 다운로드</a>
+                                <a href="https://github.com/lahuman/ppt-text2img/releases" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-semibold text-white hover:bg-white/10 transition min-h-[56px] w-full sm:w-auto" data-i18n="downloadReleases">릴리스 보기</a>
                             </div>
                         </div>
                     </div>
@@ -533,59 +555,214 @@
     <div class="mobile-only fixed inset-x-0 bottom-0 z-40 px-4 mobile-cta">
         <div class="glass rounded-[24px] border-white/10 p-3 mb-3">
             <div class="flex items-center gap-3">
-                <img src="./ppt-txt2img.png" alt="앱 아이콘" class="w-11 h-11 rounded-2xl object-cover soft-ring shrink-0" />
+                <img src="./ppt-txt2img.png" alt="App icon" class="w-11 h-11 rounded-2xl object-cover soft-ring shrink-0" />
                 <div class="min-w-0 flex-1">
                     <div class="text-sm font-semibold text-white truncate">ppt-txt2img.exe</div>
-                    <div class="text-xs text-slate-400">Windows 전용 · 로컬 실행</div>
+                    <div class="text-xs text-slate-400" data-i18n="mobileCtaSub">Windows 전용 · 로컬 실행</div>
                 </div>
-                <a href="https://github.com/lahuman/ppt-text2img/releases/download/1.0/ppt-txt2img.exe" class="inline-flex items-center justify-center rounded-2xl bg-sky-400 text-slate-950 px-4 py-3 text-sm font-bold whitespace-nowrap">다운로드</a>
+                <a href="https://github.com/lahuman/ppt-text2img/releases/download/1.0/ppt-txt2img.exe" class="inline-flex items-center justify-center rounded-2xl bg-sky-400 text-slate-950 px-4 py-3 text-sm font-bold whitespace-nowrap" data-i18n="mobileCtaBtn">다운로드</a>
             </div>
         </div>
     </div>
 
     <footer class="border-t border-white/10 py-8 text-center text-sm text-slate-500">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <p>© 2026 lahuman. Built for safer PPT delivery.</p>
+            <p data-i18n="footer">© 2026 lahuman. Built for safer PPT delivery.</p>
         </div>
     </footer>
 
     <script>
         (function () {
+            const translations = {
+                ko: {
+                    metaTitle: 'PPT 텍스트-이미지 변환기 | 폰트 깨짐 없이 그대로 전달',
+                    metaDescription: 'PPT 내부 텍스트를 고화질 이미지로 변환해 폰트 유실과 레이아웃 깨짐을 줄이는 Windows용 도구 소개 페이지',
+                    ogTitle: 'PPT 텍스트-이미지 변환기',
+                    ogDescription: '폰트 깨짐 없이, 원본 배치 그대로. PPT 텍스트를 이미지로 안전하게 변환하세요.',
+                    brandTitle: 'PPT 텍스트-이미지 변환기',
+                    navOverview: '개요', navFeatures: '기능', navWorkflow: '사용 흐름', navRequirements: '실행 환경', navDownload: '다운로드',
+                    headerDownload: '무료 다운로드',
+                    langNote: '한국어 / English',
+                    heroPill: 'Windows 10/11 · PowerPoint 기반 · 오프라인 변환',
+                    heroTitle: 'PPT 텍스트,<br><span class="gradient-text">원본 배치 그대로</span><br>이미지로 변환',
+                    heroSubtitle: '다른 PC에서 열었을 때 폰트가 깨지거나 줄바꿈이 달라지는 문제를 줄이기 위해, 슬라이드 내부 텍스트를 고화질 이미지로 바꾸어 전달하는 데 초점을 맞춘 도구입니다.',
+                    heroPrimaryBtn: '지금 다운로드', heroSecondaryBtn: 'GitHub 보기',
+                    stat1: '디자인 보존 중심', stat2: '로컬 PC 처리', stat3: 'GitHub 릴리스 제공',
+                    previewBadge: '배포용 PPT 대응', problemLabel: '문제', problemValue: '폰트 유실', solutionLabel: '해결', solutionValue: '텍스트 이미지화', resultLabel: '결과', resultValue: '레이아웃 유지',
+                    overviewTitle: '왜 필요한가요?',
+                    overviewBody: '발표용 또는 배포용 PPT는 열어보는 PC 환경에 따라 폰트, 줄바꿈, 여백, 정렬이 달라질 수 있습니다. 이 프로젝트는 그런 차이로 인해 원본 의도가 무너지는 상황을 줄이기 위해, 파워포인트 내부 텍스트를 이미지로 바꾸고 원래 위치에 맞춰 재배치하는 방식으로 동작합니다.',
+                    overviewTag1: '배포용 문서 안정성', overviewTag2: '레이아웃 보존', overviewTag3: '사내 문서 오프라인 처리',
+                    valueLabel1: '환경 차이 대응', valueTitle1: '폰트 설치 여부 영향 축소',
+                    valueLabel2: '업무 효율', valueTitle2: '슬라이드 다수도 한 번에 처리',
+                    valueLabel3: '보안성', valueTitle3: '외부 업로드 없는 로컬 실행',
+                    featuresTitle: '설명보다 결과가 먼저 보이는 기능 구성',
+                    featuresBody: '기존 페이지의 간단한 히어로와 3개 기능 카드 구조는 유지하되, 제품 이해와 신뢰도를 높일 수 있도록 문제-해결-효과 흐름으로 재구성했습니다.',
+                    feature1Title: '텍스트 자동 변환', feature1Body: '슬라이드 내부 텍스트를 이미지로 바꾸어 시각적 결과를 고정하는 데 초점을 맞췄습니다.',
+                    feature2Title: '정밀 배치 유지', feature2Body: '텍스트 위치와 크기, 회전 상태를 고려해 변환 후에도 원래 배치와 유사하게 유지합니다.',
+                    feature3Title: '진행 상태 표시', feature3Body: '변환 중인 슬라이드와 전체 진행 상황을 확인할 수 있어 대량 처리 시에도 흐름을 파악하기 쉽습니다.',
+                    feature4Title: '오프라인 실행', feature4Body: '중요한 문서를 웹에 올리지 않고 로컬 PC 안에서만 처리할 수 있어 보안 관점에서도 부담이 적습니다.',
+                    workflowTitle: '사용 흐름은 단순하게',
+                    step1Title: 'PPT 파일 선택', step1Body: '프로그램 실행 후 변환할 파워포인트 파일을 선택합니다.',
+                    step2Title: '텍스트 이미지 변환', step2Body: '파워포인트 엔진을 이용해 슬라이드 내부 텍스트를 이미지로 바꿉니다.',
+                    step3Title: '변환본 저장', step3Body: '원본 파일 폴더에 결과물이 생성되어 바로 확인하고 전달할 수 있습니다.',
+                    requirementsTitle: '실행 환경',
+                    req1Title: 'Windows 10 / 11', req1Body: 'Windows 환경에서 실행되는 데스크톱 도구입니다.',
+                    req2Title: 'Microsoft PowerPoint 설치', req2Body: '실제 파워포인트 엔진을 활용하는 방식이므로 정식 설치 버전이 필요합니다.',
+                    req3Title: '로컬 실행 환경', req3Body: '문서를 외부 서버에 올리지 않고 PC 내부에서 작업합니다.',
+                    faqTitle: '자주 궁금한 점',
+                    faq1Q: '웹 서비스인가요?', faq1A: '아니요. Windows에서 실행하는 프로그램 형태이며, 로컬에서 처리하는 흐름에 가깝습니다.',
+                    faq2Q: '왜 텍스트를 이미지로 바꾸나요?', faq2A: '다른 PC에서 폰트가 없거나 렌더링이 달라졌을 때 생길 수 있는 시각 차이를 줄이기 위해서입니다.',
+                    faq3Q: '보안 문서에도 쓸 수 있나요?', faq3A: '문서를 외부 웹서비스에 업로드하지 않는 로컬 처리 방식이어서 내부 문서 활용에 유리합니다.',
+                    downloadPill: 'PPT 내부 텍스트를 이미지로 변환하는 Windows 도구',
+                    downloadTitle: '모바일에서도 바로 이해되고, 바로 내려받도록',
+                    downloadBody: '작은 화면에서도 카드가 넘치지 않도록 간격과 폭을 다듬고, 다운로드 동선을 상단 메뉴와 하단 고정 버튼 양쪽에서 접근할 수 있게 정리했습니다.',
+                    downloadCardSub: 'Windows 전용 실행 파일 · GitHub Release 배포',
+                    downloadTag1: 'Windows 10/11', downloadTag2: 'PowerPoint 필요', downloadTag3: '로컬 실행',
+                    downloadExe: 'EXE 다운로드', downloadReleases: '릴리스 보기',
+                    mobileCtaSub: 'Windows 전용 · 로컬 실행', mobileCtaBtn: '다운로드',
+                    footer: '© 2026 lahuman. Built for safer PPT delivery.'
+                },
+                en: {
+                    metaTitle: 'PPT Text to Image Converter | Deliver PPTs Without Font Breakage',
+                    metaDescription: 'A Windows tool page for converting PPT text into high-resolution images to reduce font loss and layout breakage.',
+                    ogTitle: 'PPT Text to Image Converter',
+                    ogDescription: 'Keep your original layout intact. Convert PPT text into images for safer delivery.',
+                    brandTitle: 'PPT Text to Image Converter',
+                    navOverview: 'Overview', navFeatures: 'Features', navWorkflow: 'Workflow', navRequirements: 'Requirements', navDownload: 'Download',
+                    headerDownload: 'Free Download',
+                    langNote: '한국어 / English',
+                    heroPill: 'Windows 10/11 · PowerPoint-based · Offline conversion',
+                    heroTitle: 'Turn PPT text into images<br><span class="gradient-text">while keeping the original layout</span>',
+                    heroSubtitle: 'This tool focuses on reducing font breakage and line-wrap changes across different PCs by converting slide text into high-resolution images before sharing.',
+                    heroPrimaryBtn: 'Download Now', heroSecondaryBtn: 'View on GitHub',
+                    stat1: 'Layout-first output', stat2: 'Processed on your PC', stat3: 'GitHub release available',
+                    previewBadge: 'Built for shared PPT files', problemLabel: 'Problem', problemValue: 'Missing fonts', solutionLabel: 'Solution', solutionValue: 'Text to image', resultLabel: 'Result', resultValue: 'Stable layout',
+                    overviewTitle: 'Why does this matter?',
+                    overviewBody: 'Presentation and distributed PPT files can look different depending on the PC that opens them. Fonts, line breaks, spacing, and alignment may shift. This project helps preserve the original intent by converting PowerPoint text into images and placing them back where they belong.',
+                    overviewTag1: 'Safer shared documents', overviewTag2: 'Layout preservation', overviewTag3: 'Offline handling for internal files',
+                    valueLabel1: 'Cross-environment stability', valueTitle1: 'Less affected by missing fonts',
+                    valueLabel2: 'Work efficiency', valueTitle2: 'Process many slides at once',
+                    valueLabel3: 'Security', valueTitle3: 'Run locally without uploads',
+                    featuresTitle: 'A product page that shows the outcome first',
+                    featuresBody: 'The simple hero + feature card structure is preserved, but the content flow has been rebuilt around problem, solution, and result so the product feels clearer and more trustworthy.',
+                    feature1Title: 'Automatic text conversion', feature1Body: 'Converts slide text into images so the visual output remains fixed and consistent.',
+                    feature2Title: 'Precise layout retention', feature2Body: 'Keeps the converted result close to the original by considering text position, size, and rotation.',
+                    feature3Title: 'Progress visibility', feature3Body: 'Shows slide progress and overall conversion status, making large batches easier to track.',
+                    feature4Title: 'Offline execution', feature4Body: 'Handles important documents entirely on a local PC without uploading them to a web service.',
+                    workflowTitle: 'Keep the workflow simple',
+                    step1Title: 'Select a PPT file', step1Body: 'Launch the app and choose the PowerPoint file you want to convert.',
+                    step2Title: 'Convert text to images', step2Body: 'The PowerPoint engine converts slide text into images inside the presentation.',
+                    step3Title: 'Save the converted file', step3Body: 'The output is generated in the original folder so you can review and share it right away.',
+                    requirementsTitle: 'Requirements',
+                    req1Title: 'Windows 10 / 11', req1Body: 'This is a desktop tool designed to run on Windows.',
+                    req2Title: 'Microsoft PowerPoint installed', req2Body: 'Because it uses the real PowerPoint engine, a proper installation of Microsoft PowerPoint is required.',
+                    req3Title: 'Local runtime environment', req3Body: 'Documents are processed on the PC without being uploaded to an external server.',
+                    faqTitle: 'Frequently asked questions',
+                    faq1Q: 'Is this a web service?', faq1A: 'No. It is a Windows desktop program and works more like a local processing tool.',
+                    faq2Q: 'Why convert text into images?', faq2A: 'It helps reduce visual differences when another PC does not have the same fonts or renders text differently.',
+                    faq3Q: 'Can I use it for sensitive files?', faq3A: 'Yes, it is better suited for internal documents because it uses a local workflow instead of uploading files to a public web service.',
+                    downloadPill: 'A Windows tool that converts PPT text into images',
+                    downloadTitle: 'Easy to understand and easy to download, even on mobile',
+                    downloadBody: 'Spacing and widths were tuned so cards stay readable on small screens, and the download path is available both from the header and the fixed mobile CTA.',
+                    downloadCardSub: 'Windows executable · Distributed via GitHub Releases',
+                    downloadTag1: 'Windows 10/11', downloadTag2: 'PowerPoint required', downloadTag3: 'Runs locally',
+                    downloadExe: 'Download EXE', downloadReleases: 'View Releases',
+                    mobileCtaSub: 'Windows only · Local runtime', mobileCtaBtn: 'Download',
+                    footer: '© 2026 lahuman. Built for safer PPT delivery.'
+                }
+            };
+
             const button = document.getElementById('menuButton');
             const nav = document.getElementById('mobileNav');
-            if (!button || !nav) return;
 
             const closeMenu = () => {
+                if (!nav || !button) return;
                 nav.classList.remove('open');
                 button.setAttribute('aria-expanded', 'false');
             };
 
             const openMenu = () => {
+                if (!nav || !button) return;
                 nav.classList.add('open');
                 button.setAttribute('aria-expanded', 'true');
             };
 
-            button.addEventListener('click', () => {
-                const isOpen = nav.classList.contains('open');
-                if (isOpen) closeMenu();
-                else openMenu();
-            });
+            if (button && nav) {
+                button.addEventListener('click', () => {
+                    const isOpen = nav.classList.contains('open');
+                    if (isOpen) closeMenu();
+                    else openMenu();
+                });
 
-            nav.querySelectorAll('a').forEach((link) => {
-                link.addEventListener('click', closeMenu);
-            });
+                nav.querySelectorAll('a').forEach((link) => {
+                    link.addEventListener('click', closeMenu);
+                });
 
-            document.addEventListener('click', (event) => {
-                if (!nav.contains(event.target) && !button.contains(event.target)) {
-                    closeMenu();
+                document.addEventListener('click', (event) => {
+                    if (!nav.contains(event.target) && !button.contains(event.target)) {
+                        closeMenu();
+                    }
+                });
+
+                window.addEventListener('scroll', closeMenu, { passive: true });
+                window.addEventListener('resize', () => {
+                    if (window.innerWidth >= 768) closeMenu();
+                });
+            }
+
+            const metaDescription = document.querySelector('meta[name="description"]');
+            const ogTitle = document.querySelector('meta[property="og:title"]');
+            const ogDescription = document.querySelector('meta[property="og:description"]');
+
+            const applyLanguage = (lang) => {
+                const dict = translations[lang] || translations.ko;
+                document.documentElement.lang = lang;
+                document.title = dict.metaTitle;
+                if (metaDescription) metaDescription.setAttribute('content', dict.metaDescription);
+                if (ogTitle) ogTitle.setAttribute('content', dict.ogTitle);
+                if (ogDescription) ogDescription.setAttribute('content', dict.ogDescription);
+
+                document.querySelectorAll('[data-i18n]').forEach((el) => {
+                    const key = el.getAttribute('data-i18n');
+                    if (dict[key] !== undefined) el.textContent = dict[key];
+                });
+
+                document.querySelectorAll('[data-i18n-html]').forEach((el) => {
+                    const key = el.getAttribute('data-i18n-html');
+                    if (dict[key] !== undefined) el.innerHTML = dict[key];
+                });
+
+                document.querySelectorAll('[data-lang-switch]').forEach((btn) => {
+                    btn.classList.toggle('active', btn.getAttribute('data-lang-switch') === lang);
+                });
+
+                if (button) {
+                    button.setAttribute('aria-label', lang === 'ko' ? '메뉴 열기' : 'Open menu');
                 }
+
+                try {
+                    localStorage.setItem('ppt-text2img-lang', lang);
+                } catch (e) {}
+            };
+
+            document.querySelectorAll('[data-lang-switch]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    applyLanguage(btn.getAttribute('data-lang-switch'));
+                });
             });
 
-            window.addEventListener('scroll', closeMenu, { passive: true });
+            let initialLang = 'ko';
+            try {
+                const savedLang = localStorage.getItem('ppt-text2img-lang');
+                if (savedLang && translations[savedLang]) {
+                    initialLang = savedLang;
+                } else {
+                    const browserLang = (navigator.language || '').toLowerCase();
+                    if (browserLang.startsWith('en')) initialLang = 'en';
+                }
+            } catch (e) {}
 
-            window.addEventListener('resize', () => {
-                if (window.innerWidth >= 768) closeMenu();
-            });
+            applyLanguage(initialLang);
         })();
     </script>
 </body>

@@ -1,192 +1,470 @@
-import win32com.client
 import os
-from datetime import datetime
 import tempfile
+import logging
+from datetime import datetime
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk 
+from tkinter import filedialog, messagebox, ttk
 
-def text_to_image_ppt(input_ppt):
-    base_name, ext = os.path.splitext(input_ppt)
-    timestamp = datetime.now().strftime("%H%M%S")
-    output_ppt = f"{base_name}_converted_{timestamp}{ext}"
-    
-    powerpoint = None
-    
+import pythoncom
+import win32com.client
+from PIL import Image
+
+LANG = {
+    "ko": {
+        "app_title": "PPT 글씨 -> 이미지 변환기",
+        "main_title": "PPT 파일의 텍스트를 이미지로 변환합니다.\n(폰트 깨짐 방지용)",
+        "lang_label": "언어",
+        "btn_select": "PPT 파일 선택하기",
+        "status_ready": "대기 중",
+        "status_preparing": "프로그램을 준비 중입니다...",
+        "status_start": "변환을 시작합니다...",
+        "status_slide_processing": "슬라이드 {current}/{total} 처리 중...",
+        "status_slide_done": "슬라이드 {current}/{total} 완료",
+        "status_done": "변환이 모두 완료되었습니다!",
+        "status_done_count": "완료: 텍스트 {count}개 변환",
+        "status_error": "오류 발생!",
+        "dialog_select": "변환할 PPT 파일을 선택하세요",
+        "dialog_done_title": "완료",
+        "dialog_done_msg": "변환이 완료되었습니다.\n변환된 텍스트 수: {count}\n저장 위치:\n{path}",
+        "dialog_error_title": "에러",
+        "dialog_error_msg": "변환 중 오류가 발생했습니다:\n{error}",
+        "lang_ko": "한국어",
+        "lang_en": "English",
+    },
+    "en": {
+        "app_title": "PPT Text to Image Converter",
+        "main_title": "Convert all text in a PPT file\ninto images.\n(Prevents font corruption)",
+        "lang_label": "Language",
+        "btn_select": "Select PPT File",
+        "status_ready": "Ready",
+        "status_preparing": "Preparing the program...",
+        "status_start": "Starting conversion...",
+        "status_slide_processing": "Processing slide {current}/{total}...",
+        "status_slide_done": "Slide {current}/{total} completed",
+        "status_done": "Conversion completed!",
+        "status_done_count": "Done: converted {count} text items",
+        "status_error": "Error occurred!",
+        "dialog_select": "Select the PPT file to convert",
+        "dialog_done_title": "Done",
+        "dialog_done_msg": "Conversion completed.\nConverted text count: {count}\nSaved to:\n{path}",
+        "dialog_error_title": "Error",
+        "dialog_error_msg": "An error occurred during conversion:\n{error}",
+        "lang_ko": "한국어",
+        "lang_en": "English",
+    }
+}
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s"
+)
+
+MsoShapeTypeGroup = 6
+msoFalse = 0
+msoTrue = -1
+ppShapeFormatPNG = 2
+msoSendBackward = 3
+
+
+def has_visible_text(shape):
     try:
-        powerpoint = win32com.client.Dispatch("PowerPoint.Application")
-        abs_input_path = os.path.abspath(input_ppt)
-        presentation = powerpoint.Presentations.Open(abs_input_path, WithWindow=False)
+        if not shape.HasTextFrame:
+            return False
+        if not shape.TextFrame.HasText:
+            return False
 
-        temp_img_path = os.path.join(tempfile.gettempdir(), "temp_ppt_shape.png")
-        
-        total_slides = presentation.Slides.Count
-        progress_bar["maximum"] = total_slides
-        progress_bar["value"] = 0
+        text = shape.TextFrame.TextRange.Text
+        return bool(text and text.strip())
+    except Exception:
+        return False
 
-        # 슬라이드 크기 (EMU → 포인트 변환: 914400 EMU = 1인치 = 72pt)
-        # PowerPoint COM은 포인트 단위 사용
-        slide_width  = presentation.PageSetup.SlideWidth   # pt
-        slide_height = presentation.PageSetup.SlideHeight  # pt
 
-        for slide_index, slide in enumerate(presentation.Slides, 1):
-            
-            lbl_status.config(text=f"변환 중... (슬라이드 {slide_index} / {total_slides} 완료)")
-            progress_bar["value"] = slide_index
-            root.update()
+def ungroup_all_shapes(slide):
+    changed = True
+    while changed:
+        changed = False
+        for idx in range(slide.Shapes.Count, 0, -1):
+            try:
+                shp = slide.Shapes(idx)
+                if shp.Type == MsoShapeTypeGroup:
+                    shp.Ungroup()
+                    changed = True
+                    break
+            except Exception as e:
+                logging.debug("Ungroup skipped at index %s: %s", idx, e)
 
-            # 1. 모든 그룹 해제
-            has_group = True
-            while has_group:
-                has_group = False
-                for i in range(slide.Shapes.Count, 0, -1):
-                    try:
-                        shape = slide.Shapes(i)
-                        if shape.Type == 6:
-                            shape.Ungroup()
-                            has_group = True
-                            break
-                    except:
-                        pass
 
-            # 2. 텍스트 → 이미지 변환
-            for i in range(slide.Shapes.Count, 0, -1):
-                shape = slide.Shapes(i)
-                if shape.HasTextFrame and shape.TextFrame.HasText:
-                    try:
-                        orig_rot = shape.Rotation
-                        shape.Rotation = 0
+def crop_transparent_area(png_path, slide_width_pt, slide_height_pt):
+    with Image.open(png_path).convert("RGBA") as img:
+        alpha = img.getchannel("A")
+        bbox = alpha.getbbox()
 
-                        # 원본 텍스트 박스의 위치/크기 저장
-                        orig_left   = shape.Left
-                        orig_top    = shape.Top
-                        orig_width  = shape.Width
-                        orig_height = shape.Height
+        if not bbox:
+            return None
 
-                        if orig_width <= 0 or orig_height <= 0:
-                            continue
+        cropped = img.crop(bbox)
+        cropped.save(png_path)
 
-                        # ── 투명 보호막 사각형 생성 ──────────────────────────────
-                        # 슬라이드 전체 크기로 만들어, 그룹 바운딩박스가
-                        # 항상 슬라이드 전체와 같아지도록 고정합니다.
-                        # 이렇게 하면 Export된 이미지에서의
-                        # "원본 텍스트 박스 위치 비율"이 정확하게 계산됩니다.
-                        anchor = slide.Shapes.AddShape(
-                            1,               # msoShapeRectangle
-                            0, 0,            # 슬라이드 좌상단에 고정
-                            slide_width,
-                            slide_height
-                        )
-                        anchor.Line.Visible = 0
-                        anchor.Fill.Visible = -1
-                        anchor.Fill.Transparency = 1.0  # 완전 투명
+        scale_x = img.width / float(slide_width_pt)
+        scale_y = img.height / float(slide_height_pt)
 
-                        # 텍스트 도형 + 앵커 사각형을 그룹으로 묶기
-                        group = slide.Shapes.Range([i, slide.Shapes.Count]).Group()
+        left_pt = bbox[0] / scale_x
+        top_pt = bbox[1] / scale_y
+        width_pt = (bbox[2] - bbox[0]) / scale_x
+        height_pt = (bbox[3] - bbox[1]) / scale_y
 
-                        # 그룹은 항상 슬라이드 크기(0,0 ~ slide_width, slide_height)
-                        g_left   = group.Left    # == 0
-                        g_top    = group.Top     # == 0
-                        g_width  = group.Width   # == slide_width
-                        g_height = group.Height  # == slide_height
+        return left_pt, top_pt, width_pt, height_pt
+def shape_to_cropped_picture(slide, shape, slide_width_pt, slide_height_pt, temp_png_path):
+    orig_name = ""
+    orig_rot = 0.0
+    anchor = None
+    group = None
+    anchor_name = ""
 
-                        # 슬라이드 전체 크기로 이미지 Export
-                        group.Export(temp_img_path, 2)  # 2 = ppShapeFormatPNG
+    try:
+        try:
+            orig_name = shape.Name
+        except Exception:
+            orig_name = ""
 
-                        # ── 이미지에서 원본 도형의 비율 계산 ────────────────────
-                        # Export된 이미지는 (g_width x g_height) 비율로 렌더링됨.
-                        # 원본 도형이 이미지 내에서 차지하는 비율을 구해,
-                        # 슬라이드에 다시 원본 크기로 정확히 배치합니다.
+        try:
+            orig_rot = shape.Rotation
+            shape.Rotation = 0
+        except Exception:
+            orig_rot = 0.0
 
-                        # 이미지 내 원본 도형의 픽셀 위치 비율
-                        ratio_x = (orig_left - g_left) / g_width
-                        ratio_y = (orig_top  - g_top)  / g_height
-                        ratio_w = orig_width  / g_width
-                        ratio_h = orig_height / g_height
+        # 투명 anchor 추가
+        anchor = slide.Shapes.AddShape(1, 0, 0, slide_width_pt, slide_height_pt)
+        try:
+            anchor_name = "__ppt_anchor_%d" % anchor.Id
+            anchor.Name = anchor_name
+        except Exception:
+            try:
+                anchor_name = anchor.Name
+            except Exception:
+                anchor_name = ""
 
-                        # 이미지 전체를 슬라이드 크기로 삽입한 뒤 크롭하는 방식 대신,
-                        # 이미지를 원본 도형 크기에 맞게 "역산"하여 삽입합니다.
-                        # 즉, 이미지를 원본 크기의 역수로 확대하면
-                        # 텍스트 부분이 정확히 원본 도형 영역을 채웁니다.
+        anchor.Line.Visible = 0
+        anchor.Fill.Visible = -1
+        anchor.Fill.Transparency = 1.0
 
-                        # 삽입할 이미지의 전체 크기 (원본 도형 크기 / 비율)
-                        insert_width  = orig_width  / ratio_w   # == slide_width
-                        insert_height = orig_height / ratio_h   # == slide_height
+        # 원본 shape + anchor 를 직접 그룹화
+        # Duplicate() 사용 안 함
+        group = slide.Shapes.Range([orig_name, anchor_name]).Group()
+        group.Export(temp_png_path, 2)  # ppShapeFormatPNG
 
-                        # 삽입 위치: 이미지의 (ratio_x, ratio_y) 지점이
-                        # 원본 도형의 (orig_left, orig_top)에 오도록 역산
-                        insert_left = orig_left - ratio_x * insert_width
-                        insert_top  = orig_top  - ratio_y * insert_height
+        cropped = crop_transparent_area(temp_png_path, slide_width_pt, slide_height_pt)
+        if not cropped:
+            raise RuntimeError("No visible pixels found")
 
-                        new_shape = slide.Shapes.AddPicture(
-                            temp_img_path,
-                            False, True,
-                            insert_left,
-                            insert_top,
-                            insert_width,
-                            insert_height
-                        )
+        left_pt, top_pt, width_pt, height_pt = cropped
 
-                        # 회전각 재적용
-                        new_shape.Rotation = orig_rot
+        new_shape = slide.Shapes.AddPicture(
+            temp_png_path,
+            False,
+            True,
+            left_pt,
+            top_pt,
+            width_pt,
+            height_pt
+        )
 
-                        # 원본 그룹 삭제
-                        group.Delete()
+        try:
+            if orig_name:
+                new_shape.Name = orig_name + "_img"
+        except Exception:
+            pass
 
-                    except Exception as inner_e:
-                        print(f"도형 변환 무시됨: {inner_e}")
-                        pass
+        try:
+            new_shape.Rotation = orig_rot
+        except Exception:
+            pass
 
-        abs_output_path = os.path.abspath(output_ppt)
-        presentation.SaveAs(abs_output_path)
-        presentation.Close()
-        powerpoint.Quit()
+        # 핵심: 원본을 따로 Delete 하지 말고
+        # 원본이 포함된 group 을 통째로 삭제
+        try:
+            group.Delete()
+            group = None
+        except Exception as e:
+            raise RuntimeError("Group delete failed: %s" % e)
 
-        if os.path.exists(temp_img_path):
-            try: os.remove(temp_img_path)
-            except: pass
-
-        lbl_status.config(text="변환이 모두 완료되었습니다!", fg="green")
-        messagebox.showinfo("완료", f"변환이 완료되었습니다!\n저장 위치: {output_ppt}")
-        progress_bar["value"] = 0
-        btn_select.config(state="normal")
+        return True
 
     except Exception as e:
-        lbl_status.config(text="오류 발생!", fg="red")
-        messagebox.showerror("에러", f"변환 중 오류가 발생했습니다:\n{str(e)}")
-        progress_bar["value"] = 0
-        btn_select.config(state="normal")
-        if powerpoint:
-            try: powerpoint.Quit()
-            except: pass
+        logging.warning("Shape conversion skipped: %s", e)
+
+        # 실패 시 원복 시도
+        try:
+            if group is not None:
+                group.Ungroup()
+        except Exception:
+            pass
+
+        if anchor_name:
+            try:
+                slide.Shapes(anchor_name).Delete()
+            except Exception:
+                pass
+
+        if orig_name:
+            try:
+                slide.Shapes(orig_name).Rotation = orig_rot
+            except Exception:
+                pass
+
+        return False
+
+def text_to_image_ppt(input_ppt, progress_callback=None, texts=None):
+    texts = texts or LANG["ko"]
+
+    pythoncom.CoInitialize()
+
+    powerpoint = None
+    presentation = None
+    temp_png_path = None
+
+    base_name, ext = os.path.splitext(input_ppt)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_ppt = "%s_converted_%s%s" % (base_name, timestamp, ext)
+    abs_input_path = os.path.abspath(input_ppt)
+    abs_output_path = os.path.abspath(output_ppt)
+
+    try:
+        temp_fd, temp_png_path = tempfile.mkstemp(prefix="ppt_text_", suffix=".png")
+        os.close(temp_fd)
+
+        powerpoint = win32com.client.Dispatch("PowerPoint.Application")
+        powerpoint.DisplayAlerts = 0
+
+        presentation = powerpoint.Presentations.Open(abs_input_path, WithWindow=False)
+
+        total_slides = presentation.Slides.Count
+        slide_width_pt = presentation.PageSetup.SlideWidth
+        slide_height_pt = presentation.PageSetup.SlideHeight
+
+        if progress_callback:
+            progress_callback(0, total_slides, texts["status_start"])
+
+        converted_count = 0
+
+        for slide_index, slide in enumerate(presentation.Slides, start=1):
+            if progress_callback:
+                progress_callback(
+                    slide_index - 1,
+                    total_slides,
+                    texts["status_slide_processing"].format(
+                        current=slide_index,
+                        total=total_slides
+                    )
+                )
+
+            # 필요 시 사용
+            # ungroup_all_shapes(slide)
+
+            for i in range(slide.Shapes.Count, 0, -1):
+                try:
+                    shape = slide.Shapes(i)
+
+                    if not has_visible_text(shape):
+                        continue
+
+                    ok = shape_to_cropped_picture(
+                        slide=slide,
+                        shape=shape,
+                        slide_width_pt=slide_width_pt,
+                        slide_height_pt=slide_height_pt,
+                        temp_png_path=temp_png_path
+                    )
+
+                    if ok:
+                        converted_count += 1
+
+                except Exception as e:
+                    logging.warning(
+                        "Slide %s shape %s skipped: %s",
+                        slide_index,
+                        i,
+                        e
+                    )
+
+            if progress_callback:
+                progress_callback(
+                    slide_index,
+                    total_slides,
+                    texts["status_slide_done"].format(
+                        current=slide_index,
+                        total=total_slides
+                    )
+                )
+
+        presentation.SaveAs(abs_output_path)
+
+        if progress_callback:
+            progress_callback(
+                total_slides,
+                total_slides,
+                texts["status_done_count"].format(count=converted_count)
+            )
+
+        return abs_output_path, converted_count
+
+    finally:
+        if presentation is not None:
+            try:
+                presentation.Close()
+            except Exception:
+                pass
+
+        if powerpoint is not None:
+            try:
+                powerpoint.Quit()
+            except Exception:
+                pass
+
+        if temp_png_path and os.path.exists(temp_png_path):
+            try:
+                os.remove(temp_png_path)
+            except Exception:
+                pass
+
+        pythoncom.CoUninitialize()
+
+        
+class App:
+    def __init__(self, root):
+        self.root = root
+        self.lang_code = "ko"
+
+        self.root.geometry("500x320")
+        self.root.resizable(False, False)
+
+        # 언어 선택 영역
+        self.lang_frame = tk.Frame(root)
+        self.lang_frame.pack(pady=(12, 4))
+
+        self.lbl_lang = tk.Label(self.lang_frame, font=("Arial", 10))
+        self.lbl_lang.pack(side="left", padx=(0, 8))
+
+        self.cmb_lang = ttk.Combobox(
+            self.lang_frame,
+            state="readonly",
+            width=10,
+            values=["한국어", "English"]
+        )
+        self.cmb_lang.current(0)
+        self.cmb_lang.bind("<<ComboboxSelected>>", self.change_language)
+        self.cmb_lang.pack(side="left")
+
+        self.lbl_title = tk.Label(
+            root,
+            font=("Arial", 12),
+            justify="center"
+        )
+        self.lbl_title.pack(pady=16)
+
+        self.btn_select = tk.Button(
+            root,
+            command=self.select_file,
+            font=("Arial", 10),
+            width=24,
+            height=2
+        )
+        self.btn_select.pack(pady=6)
+
+        self.lbl_status = tk.Label(
+            root,
+            fg="blue",
+            font=("Arial", 10),
+            width=55,
+            anchor="w",
+            justify="left",
+            wraplength=430
+        )
+        self.lbl_status.pack(pady=8)
+
+        self.progress_bar = ttk.Progressbar(
+            root,
+            orient="horizontal",
+            length=380,
+            mode="determinate"
+        )
+        self.progress_bar.pack(pady=6)
+
+        self.apply_language()
+
+    def tr(self, key, **kwargs):
+        text = LANG[self.lang_code][key]
+        if kwargs:
+            return text.format(**kwargs)
+        return text
+
+    def apply_language(self):
+        self.root.title(self.tr("app_title"))
+        self.lbl_lang.config(text=self.tr("lang_label"))
+        self.lbl_title.config(text=self.tr("main_title"))
+        self.btn_select.config(text=self.tr("btn_select"))
+        self.lbl_status.config(text=self.tr("status_ready"), fg="blue")
+
+    def change_language(self, event=None):
+        selected = self.cmb_lang.get()
+        self.lang_code = "en" if selected == "English" else "ko"
+        self.apply_language()
+
+    def set_status(self, text, color="blue"):
+        self.lbl_status.config(text=text, fg=color)
+        self.root.update_idletasks()
+
+    def update_progress(self, current, total, message):
+        self.progress_bar["maximum"] = max(total, 1)
+        self.progress_bar["value"] = current
+        self.set_status(message, "blue")
+
+    def select_file(self):
+        filepath = filedialog.askopenfilename(
+            title=self.tr("dialog_select"),
+            filetypes=(("PowerPoint files", "*.pptx *.ppt"), ("All files", "*.*"))
+        )
+
+        if not filepath:
+            return
+
+        self.btn_select.config(state="disabled")
+        self.cmb_lang.config(state="disabled")
+        self.progress_bar["value"] = 0
+        self.set_status(self.tr("status_preparing"), "blue")
+
+        try:
+            output_path, converted_count = text_to_image_ppt(
+                filepath,
+                progress_callback=self.update_progress,
+                texts=LANG[self.lang_code]
+            )
+
+            self.set_status(self.tr("status_done"), "green")
+            messagebox.showinfo(
+                self.tr("dialog_done_title"),
+                self.tr(
+                    "dialog_done_msg",
+                    count=converted_count,
+                    path=output_path
+                )
+            )
+
+        except Exception as e:
+            logging.exception("Conversion failed")
+            self.set_status(self.tr("status_error"), "red")
+            messagebox.showerror(
+                self.tr("dialog_error_title"),
+                self.tr("dialog_error_msg", error=e)
+            )
+
+        finally:
+            self.progress_bar["value"] = 0
+            self.btn_select.config(state="normal")
+            self.cmb_lang.config(state="readonly")
 
 
-def select_file():
-    filepath = filedialog.askopenfilename(
-        title="변환할 PPT 파일을 선택하세요",
-        filetypes=(("PowerPoint files", "*.pptx *.ppt"), ("All files", "*.*"))
-    )
-    if filepath:
-        btn_select.config(state="disabled")
-        lbl_status.config(text="프로그램을 준비 중입니다...", fg="blue")
-        root.update()
-        text_to_image_ppt(filepath)
-
-
-# --- GUI ---
-root = tk.Tk()
-root.title("PPT 글씨 -> 이미지 변환기")
-root.geometry("400x250")
-
-lbl_title = tk.Label(root, text="PPT 파일의 모든 텍스트를\n이미지로 변환합니다.", font=("Arial", 12))
-lbl_title.pack(pady=20)
-
-btn_select = tk.Button(root, text="PPT 파일 선택하기", command=select_file, font=("Arial", 10), width=20, height=2)
-btn_select.pack(pady=5)
-
-lbl_status = tk.Label(root, text="대기 중", fg="blue", font=("Arial", 10))
-lbl_status.pack(pady=5)
-
-progress_bar = ttk.Progressbar(root, orient="horizontal", length=300, mode="determinate")
-progress_bar.pack(pady=5)
-
-root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = App(root)
+    root.mainloop()
