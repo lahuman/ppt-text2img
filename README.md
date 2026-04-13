@@ -6,7 +6,7 @@
 * **현재 버전**: `v1.1`
 * **릴리즈 노트**: [RELEASE_NOTES.md](RELEASE_NOTES.md)
 * **다운로드**: [ppt-txt2img.exe](https://github.com/lahuman/ppt-text2img/releases/download/1.1/ppt-txt2img.exe)
-* **소개 페이지**: [lahuman.github.io/ppt-txt2img](https://lahuman.github.io/ppt-txt2img)
+* **소개 페이지**: [lahuman.github.io/ppt-txt2img](https://lahuman.github.io/ppt-text2img)
 
 ## 2. 프로젝트 개요
 * **목적**: 다른 PC에서 PPT를 실행할 때 발생하는 폰트 유실 및 레이아웃 깨짐 현상을 근본적으로 방지합니다.

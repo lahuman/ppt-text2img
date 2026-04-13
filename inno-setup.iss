@@ -5,7 +5,7 @@
 #define MyAppName "ppt-txt2img"
 #define MyAppVersion "1.1"
 #define MyAppPublisher "lahuman"
-#define MyAppURL "https://lahuman.github.io/ppt-txt2img"
+#define MyAppURL "https://lahuman.github.io/ppt-text2img"
 #define MyAppExeName "app.exe"
 #define MyAppAssocName MyAppName + " File"
 #define MyAppAssocExt ".myp"
