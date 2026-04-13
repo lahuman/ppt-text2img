@@ -401,6 +401,8 @@ def text_to_image_ppt(input_ppt, progress_callback=None, texts=None):
 
         
 class App:
+    WINDOW_WIDTH = 640
+    BASE_WINDOW_HEIGHT = 620
     BG_COLOR = "#F4F1EA"
     CARD_COLOR = "#FFFDF8"
     BORDER_COLOR = "#DDD4C5"
@@ -421,8 +423,9 @@ class App:
         self.worker_thread = None
         self.ui_event_queue = queue.Queue()
 
-        self.root.geometry("640x560")
-        self.root.resizable(False, False)
+        self.root.geometry(f"{self.WINDOW_WIDTH}x{self.BASE_WINDOW_HEIGHT}")
+        self.root.minsize(self.WINDOW_WIDTH, self.BASE_WINDOW_HEIGHT)
+        self.root.resizable(False, True)
         self.root.configure(bg=self.BG_COLOR)
 
         self.progress_style = ttk.Style()
@@ -635,20 +638,44 @@ class App:
         self.lbl_progress_title.config(text=self.tr("progress_title"))
         self.update_selected_file_label()
         self.lbl_status.config(text=self.tr("status_ready"), fg=self.PRIMARY_COLOR)
+        self.fit_window_height()
 
     def change_language(self, event=None):
         selected = self.cmb_lang.get()
         self.lang_code = "en" if selected == "English" else "ko"
         self.apply_language()
 
+    def format_display_path(self, path, max_chars=90):
+        if len(path) <= max_chars:
+            return path
+
+        head_len = (max_chars - 3) // 2
+        tail_len = max_chars - 3 - head_len
+        return "%s...%s" % (path[:head_len], path[-tail_len:])
+
     def update_selected_file_label(self):
         if self.selected_file:
-            self.lbl_file_value.config(text=self.selected_file, fg=self.TEXT_COLOR)
+            self.lbl_file_value.config(
+                text=self.format_display_path(self.selected_file),
+                fg=self.TEXT_COLOR
+            )
         else:
             self.lbl_file_value.config(
                 text=self.tr("file_placeholder"),
                 fg=self.MUTED_COLOR
             )
+        self.fit_window_height()
+
+    def fit_window_height(self):
+        self.root.update_idletasks()
+        required_height = self.container.winfo_reqheight() + 24
+        screen_limit = max(self.BASE_WINDOW_HEIGHT, self.root.winfo_screenheight() - 120)
+        target_height = max(
+            self.BASE_WINDOW_HEIGHT,
+            min(required_height, screen_limit),
+            self.root.winfo_height()
+        )
+        self.root.geometry(f"{self.WINDOW_WIDTH}x{target_height}")
 
     def set_busy(self, busy):
         self.is_converting = busy
