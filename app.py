@@ -5,9 +5,16 @@ from datetime import datetime
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
-import pythoncom
-import win32com.client
 from PIL import Image
+
+try:
+    import pythoncom
+    import win32com.client
+    COM_IMPORT_ERROR = None
+except ImportError as exc:
+    pythoncom = None
+    win32com = None
+    COM_IMPORT_ERROR = exc
 
 LANG = {
     "ko": {
@@ -28,6 +35,8 @@ LANG = {
         "dialog_done_msg": "변환이 완료되었습니다.\n변환된 텍스트 수: {count}\n저장 위치:\n{path}",
         "dialog_error_title": "에러",
         "dialog_error_msg": "변환 중 오류가 발생했습니다:\n{error}",
+        "error_windows_only": "이 프로그램은 Windows에서만 실행할 수 있습니다.",
+        "error_powerpoint_required": "Microsoft PowerPoint와 pywin32가 설치된 Windows 환경이 필요합니다.\n상세 오류: {error}",
         "lang_ko": "한국어",
         "lang_en": "English",
     },
@@ -49,6 +58,8 @@ LANG = {
         "dialog_done_msg": "Conversion completed.\nConverted text count: {count}\nSaved to:\n{path}",
         "dialog_error_title": "Error",
         "dialog_error_msg": "An error occurred during conversion:\n{error}",
+        "error_windows_only": "This program can only run on Windows.",
+        "error_powerpoint_required": "A Windows environment with Microsoft PowerPoint and pywin32 is required.\nDetails: {error}",
         "lang_ko": "한국어",
         "lang_en": "English",
     }
@@ -114,6 +125,18 @@ def crop_transparent_area(png_path, slide_width_pt, slide_height_pt):
         height_pt = (bbox[3] - bbox[1]) / scale_y
 
         return left_pt, top_pt, width_pt, height_pt
+
+
+def ensure_runtime_requirements(texts):
+    if os.name != "nt":
+        raise RuntimeError(texts["error_windows_only"])
+
+    if pythoncom is None or win32com is None:
+        raise RuntimeError(
+            texts["error_powerpoint_required"].format(error=COM_IMPORT_ERROR)
+        )
+
+
 def shape_to_cropped_picture(slide, shape, slide_width_pt, slide_height_pt, temp_png_path):
     orig_name = ""
     orig_rot = 0.0
@@ -151,7 +174,7 @@ def shape_to_cropped_picture(slide, shape, slide_width_pt, slide_height_pt, temp
         # 원본 shape + anchor 를 직접 그룹화
         # Duplicate() 사용 안 함
         group = slide.Shapes.Range([orig_name, anchor_name]).Group()
-        group.Export(temp_png_path, 2)  # ppShapeFormatPNG
+        group.Export(temp_png_path, ppShapeFormatPNG)
 
         cropped = crop_transparent_area(temp_png_path, slide_width_pt, slide_height_pt)
         if not cropped:
@@ -216,6 +239,7 @@ def shape_to_cropped_picture(slide, shape, slide_width_pt, slide_height_pt, temp
 
 def text_to_image_ppt(input_ppt, progress_callback=None, texts=None):
     texts = texts or LANG["ko"]
+    ensure_runtime_requirements(texts)
 
     pythoncom.CoInitialize()
 
@@ -258,8 +282,8 @@ def text_to_image_ppt(input_ppt, progress_callback=None, texts=None):
                     )
                 )
 
-            # 필요 시 사용
-            # ungroup_all_shapes(slide)
+            # 그룹 내부 텍스트도 빠짐없이 변환되도록 먼저 모두 해제한다.
+            ungroup_all_shapes(slide)
 
             for i in range(slide.Shapes.Count, 0, -1):
                 try:
