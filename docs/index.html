@@ -4,289 +4,1061 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PPT 텍스트-이미지 변환기 | 폰트 깨짐 없이 그대로 전달</title>
-    <meta name="description" content="PPT 텍스트를 이미지로 변환해 폰트 깨짐과 줄바꿈 오류를 줄이는 Windows용 도구" />
+    <meta name="description" content="PPT 텍스트를 이미지로 변환해 폰트 깨짐과 줄바꿈 오류를 줄이는 Windows용 데스크톱 도구 소개 페이지" />
     <meta name="theme-color" content="#f3ede2" />
+    <meta property="og:title" content="PPT 텍스트-이미지 변환기" />
+    <meta property="og:description" content="PowerPoint 텍스트를 이미지로 바꾸어, 다른 PC에서도 원본 레이아웃을 더 안전하게 유지하세요." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="./ppt-txt2img.png" />
+    <link rel="icon" type="image/png" href="./ppt-txt2img.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet" />
     <style>
         :root {
-            --bg: #f8f4ed;
-            --bg-accent: #fdfaf5;
-            --surface: rgba(255, 255, 255, 0.92);
+            --bg: #f5f0e6;
+            --surface: rgba(255, 255, 255, 0.95);
             --line: rgba(74, 53, 32, 0.08);
-            --ink: #1a2b3b;
-            --muted: #5a6b82;
+            --ink: #182d44;
+            --muted: #5c6c80;
             --brand: #2b7a80;
-            --brand-light: #eef7f8;
-            --accent: #d48d45;
-            --shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
-            --radius-lg: 24px;
-            --radius-md: 16px;
-            --max: 1100px;
+            --brand-dark: #1f6267;
+            --brand-soft: rgba(43, 122, 128, 0.1);
+            --accent: #cc8b45;
+            --shadow-sm: 0 4px 12px rgba(29, 35, 48, 0.04);
+            --shadow-md: 0 12px 32px rgba(29, 35, 48, 0.08);
+            --shadow-lg: 0 24px 60px rgba(29, 35, 48, 0.12);
+            --radius-xl: 28px;
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --max: 1180px;
         }
 
-        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
         body {
             margin: 0;
             color: var(--ink);
+            /* 미세한 노이즈와 은은한 그라데이션으로 빈 공간의 밀도를 높임 */
             background-color: var(--bg);
-            /* 미세한 노이즈 배경 추가 */
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3%3Ffilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-            background-blend-mode: overlay;
-            font-family: "Plus Jakarta Sans", "Noto Sans KR", sans-serif;
-            line-height: 1.6;
+            background-image: 
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"),
+                radial-gradient(circle at 15% 10%, rgba(43, 122, 128, 0.08), transparent 40%),
+                radial-gradient(circle at 85% 20%, rgba(204, 139, 69, 0.08), transparent 40%),
+                linear-gradient(180deg, #fbf7f0 0%, #f5f0e6 46%, #eee7da 100%);
+            background-blend-mode: overlay, normal, normal, normal;
+            font-family: "Plus Jakarta Sans", "Noto Sans KR", system-ui, sans-serif;
             word-break: keep-all;
+            -webkit-font-smoothing: antialiased;
+            line-height: 1.6;
         }
 
-        .container {
-            width: min(calc(100% - 40px), var(--max));
-            margin: 0 auto;
+        img { max-width: 100%; display: block; }
+        a { color: inherit; text-decoration: none; }
+
+        .shell { position: relative; overflow: hidden; }
+        .container { width: min(calc(100% - 32px), var(--max)); margin: 0 auto; }
+
+        /* 공통 카드 스타일 (밀도감 향상) */
+        .surface {
+            background: var(--surface);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--line);
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+        }
+        .surface:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: rgba(43, 122, 128, 0.2);
+        }
+
+        .eyebrow {
+            display: inline-flex; align-items: center; gap: 10px;
+            padding: 8px 16px; border-radius: 999px;
+            background: #fff; border: 1px solid var(--line);
+            color: var(--brand-dark); font-size: 0.85rem; font-weight: 700;
+            box-shadow: var(--shadow-sm);
+        }
+        .eyebrow-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--brand);
+            box-shadow: 0 0 0 4px var(--brand-soft);
+            animation: pulse-dot 2s infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
         }
 
         /* Header */
         header {
-            position: sticky; top: 0; z-index: 100;
-            backdrop-filter: blur(12px);
-            background: rgba(248, 244, 237, 0.8);
+            position: sticky; top: 0; z-index: 50;
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            background: rgba(245, 240, 230, 0.85);
             border-bottom: 1px solid var(--line);
         }
-
-        .header-row {
-            display: flex; align-items: center; justify-content: space-between;
-            height: 70px;
-        }
-
-        .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-        .brand-mark { 
-            width: 40px; height: 40px; border-radius: 12px; 
-            background: #fff; border: 1px solid var(--line);
-            display: flex; align-items: center; justify-content: center;
-        }
-        .brand-text small { display: block; font-size: 10px; font-weight: 800; color: var(--brand); letter-spacing: 1px; }
-        .brand-text strong { font-size: 16px; color: var(--ink); }
-
-        .nav { display: flex; gap: 24px; }
-        .nav a { text-decoration: none; font-size: 14px; font-weight: 700; color: var(--muted); transition: color 0.2s; }
+        .header-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 72px; }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand-mark { width: 44px; height: 44px; border-radius: 14px; overflow: hidden; background: #fff; border: 1px solid var(--line); box-shadow: var(--shadow-sm); }
+        .brand small { display: block; color: var(--brand); font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+        .brand strong { display: block; font-size: 0.95rem; font-weight: 800; }
+        .nav { display: flex; align-items: center; gap: 28px; }
+        .nav a { font-size: 0.95rem; font-weight: 700; color: var(--muted); transition: color 0.2s ease; }
         .nav a:hover { color: var(--brand); }
-
-        .lang-switch { display: flex; background: #fff; padding: 4px; border-radius: 50px; border: 1px solid var(--line); }
-        .lang-btn { 
-            border: 0; background: none; font-size: 11px; font-weight: 800; 
-            padding: 6px 12px; border-radius: 50px; cursor: pointer; color: var(--muted);
+        
+        .actions { display: flex; align-items: center; gap: 12px; }
+        .header-cta {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-height: 40px; padding: 0 18px; border-radius: 999px;
+            background: var(--brand); color: #fff; font-size: 0.85rem; font-weight: 800;
+            transition: all 0.2s ease;
         }
-        .lang-btn.active { background: var(--brand); color: #fff; }
+        .header-cta:hover { background: var(--brand-dark); transform: translateY(-1px); box-shadow: 0 8px 16px rgba(43, 122, 128, 0.2); }
+        
+        .lang-switch { display: inline-flex; padding: 4px; border-radius: 999px; background: #fff; border: 1px solid var(--line); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .lang-btn {
+            border: 0; background: transparent; color: var(--muted); padding: 6px 14px;
+            border-radius: 999px; font-size: 0.8rem; font-weight: 800; cursor: pointer; transition: all 0.2s ease;
+        }
+        .lang-btn.active { background: var(--brand); color: #fff; box-shadow: 0 4px 10px rgba(43, 122, 128, 0.2); }
+
+        .mobile-toggle { display: none; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); cursor: pointer; }
+        .mobile-nav { display: none; padding: 0 0 16px; }
+        .mobile-nav-inner { padding: 16px; border-radius: 20px; background: #fff; border: 1px solid var(--line); box-shadow: var(--shadow-md); }
+        .mobile-nav-inner a { display: block; padding: 12px; border-radius: 10px; font-weight: 700; color: var(--ink); }
+        .mobile-nav-inner a:hover { background: var(--brand-soft); color: var(--brand); }
 
         /* Hero */
-        .hero { padding: 80px 0 60px; text-align: center; }
-        .eyebrow { 
-            display: inline-flex; align-items: center; gap: 8px; 
-            background: #fff; padding: 8px 16px; border-radius: 50px;
-            font-size: 13px; font-weight: 700; color: var(--brand);
-            border: 1px solid var(--line); margin-bottom: 24px;
-        }
-        h1 { 
-            font-size: clamp(2.5rem, 8vw, 4.5rem); line-height: 1.1; letter-spacing: -2px; 
-            margin: 0 0 24px; font-weight: 800;
-        }
-        .headline-accent { color: var(--brand); background: linear-gradient(120deg, var(--brand), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .hero p { max-width: 600px; margin: 0 auto 40px; color: var(--muted); font-size: 18px; }
+        .hero { padding: 60px 0 40px; }
+        .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+        
+        h1 { margin: 16px 0; font-size: clamp(2.2rem, 5vw, 4.2rem); line-height: 1.15; letter-spacing: -0.03em; font-weight: 800; }
+        .headline-accent { display: inline-block; background: linear-gradient(135deg, var(--brand) 0%, #4c96a8 50%, var(--accent) 100%); -webkit-background-clip: text; color: transparent; }
+        .hero-copy p { margin: 0; max-width: 90%; color: var(--muted); font-size: clamp(1rem, 1.5vw, 1.1rem); line-height: 1.7; }
 
-        .cta-group { display: flex; justify-content: center; gap: 12px; }
-        .btn {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 16px 32px; border-radius: 16px; font-weight: 800;
-            text-decoration: none; transition: all 0.2s;
+        .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+        .cta-primary, .cta-secondary {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            min-height: 52px; padding: 0 24px; border-radius: 16px; font-weight: 800; font-size: 0.95rem;
+            transition: all 0.2s ease;
         }
-        .btn-primary { background: var(--brand); color: #fff; box-shadow: 0 10px 20px rgba(43, 122, 128, 0.2); }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(43, 122, 128, 0.3); }
-        .btn-secondary { background: #fff; color: var(--ink); border: 1px solid var(--line); }
-        .btn-secondary:hover { background: var(--bg-accent); }
+        .cta-primary { background: var(--brand); color: #fff; box-shadow: 0 12px 24px rgba(43, 122, 128, 0.25); }
+        .cta-secondary { background: #fff; color: var(--ink); border: 1px solid var(--line); box-shadow: var(--shadow-sm); }
+        .cta-primary:hover, .cta-secondary:hover { transform: translateY(-3px); }
+        .cta-primary:hover { box-shadow: 0 16px 32px rgba(43, 122, 128, 0.35); background: var(--brand-dark); }
+        
+        .hero-notes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+        .hero-note { padding: 8px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.7); border: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; font-weight: 700; }
 
-        /* Dashboard Preview */
-        .preview-area { margin-top: 60px; position: relative; }
-        .main-shot { 
-            width: 100%; max-width: 800px; margin: 0 auto; border-radius: 20px;
-            box-shadow: 0 40px 100px rgba(0,0,0,0.1); border: 1px solid var(--line);
-            background: #fff; padding: 8px;
+        .hero-media { position: relative; min-height: 500px; }
+        .shot-main, .shot-float, .shot-dialog {
+            position: absolute; border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.4);
+            background: #fff; box-shadow: var(--shadow-md); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .main-shot img { width: 100%; border-radius: 12px; display: block; }
+        .shot-main { inset: 20px 20px 0 0; padding: 8px; transform: rotate(-2deg); z-index: 1; }
+        .shot-float { width: 48%; right: -10px; bottom: 40px; padding: 8px; transform: rotate(3deg); z-index: 2; }
+        .shot-dialog { width: 42%; left: -10px; bottom: 10px; padding: 8px; transform: rotate(-3deg); z-index: 3; }
+        
+        .hero-media:hover .shot-main { transform: rotate(-1deg) translateY(-5px); box-shadow: var(--shadow-lg); }
+        .hero-media:hover .shot-float { transform: rotate(4deg) translateY(-8px); }
+        .hero-media:hover .shot-dialog { transform: rotate(-2deg) translateY(-6px); }
 
-        /* Sections */
-        section { padding: 100px 0; }
-        .section-title { text-align: center; margin-bottom: 60px; }
-        .section-title h2 { font-size: 36px; font-weight: 800; margin-bottom: 16px; }
-        .section-title p { color: var(--muted); font-size: 18px; }
-
-        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
-
-        .card { 
-            background: var(--surface); padding: 32px; border-radius: var(--radius-lg); 
-            border: 1px solid var(--line); transition: all 0.3s;
-        }
-        .card:hover { border-color: var(--brand); transform: translateY(-5px); box-shadow: var(--shadow); }
-        .card .icon { 
-            width: 50px; height: 50px; background: var(--brand-light); color: var(--brand);
-            border-radius: 12px; display: flex; align-items: center; justify-content: center;
-            margin-bottom: 20px;
-        }
-        .card h3 { margin: 0 0 12px; font-size: 20px; }
-        .card p { margin: 0; color: var(--muted); font-size: 15px; }
-
-        /* Workflow */
-        .step-card { text-align: center; position: relative; }
-        .step-num { 
-            width: 32px; height: 32px; background: var(--brand); color: #fff; 
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 16px; font-weight: 800; font-size: 14px;
+        .shot-caption {
+            position: absolute; left: 16px; right: 16px; bottom: 16px;
+            padding: 10px 14px; border-radius: 12px; background: rgba(24, 45, 68, 0.85);
+            color: #fff; font-size: 0.8rem; font-weight: 700; backdrop-filter: blur(8px); text-align: center;
         }
 
-        /* FAQ */
-        .faq-item { background: #fff; border-radius: 16px; padding: 24px; border: 1px solid var(--line); margin-bottom: 12px; }
-        .faq-item strong { display: block; margin-bottom: 8px; color: var(--brand); }
+        /* Stats & Sections */
+        .stat-strip { padding: 20px 0 40px; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .stat-card { padding: 24px; border-radius: var(--radius-lg); text-align: left; }
+        .stat-card strong { display: block; font-size: 1.8rem; margin-bottom: 8px; color: var(--brand); line-height: 1; }
+        .stat-card span { display: block; color: var(--muted); font-size: 0.9rem; font-weight: 600; line-height: 1.5; }
 
-        /* Footer */
-        footer { padding: 40px 0; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
-        .footer-content { display: flex; justify-content: space-between; }
+        .section { padding: 60px 0; }
+        .section-tight { padding-top: 20px; }
+        .section-head { max-width: 680px; margin-bottom: 40px; }
+        .section-kicker {
+            display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 999px;
+            background: #fff; border: 1px solid var(--line); color: var(--accent);
+            font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px;
+        }
+        .section h2 { margin: 0 0 16px; font-size: clamp(1.8rem, 3vw, 2.6rem); line-height: 1.2; letter-spacing: -0.03em; }
+        .section p.lead { margin: 0; color: var(--muted); font-size: 1.05rem; line-height: 1.7; }
 
-        /* Mobile */
-        @media (max-width: 850px) {
-            .nav, .header-cta { display: none; }
-            .grid-3, .grid-2 { grid-template-columns: 1fr; }
-            h1 { font-size: 42px; }
-            section { padding: 60px 0; }
-            .hero { padding: 60px 0 40px; }
-            .btn { width: 100%; justify-content: center; }
-            .cta-group { flex-direction: column; }
+        /* Usecase */
+        .usecase-panel { padding: 40px; border-radius: var(--radius-xl); }
+        .usecase-head { margin-bottom: 32px; }
+        .usecase-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .usecase-card {
+            padding: 24px; border-radius: var(--radius-lg); background: #fff; 
+            border: 1px solid var(--line); box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+        }
+        .usecase-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--brand); }
+        .usecase-icon {
+            width: 44px; height: 44px; display: grid; place-items: center;
+            border-radius: 12px; background: var(--brand-soft); color: var(--brand); margin-bottom: 16px;
+        }
+        .usecase-card h3 { margin: 0 0 8px; font-size: 1.05rem; line-height: 1.4; }
+        .usecase-card p { margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+
+        /* Problem Grid */
+        .problem-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .problem-card { padding: 32px; border-radius: var(--radius-lg); }
+        .problem-card .icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px; background: var(--brand-soft); color: var(--brand); margin-bottom: 20px; }
+        .problem-card h3, .workflow-card h3, .faq-card h3, .check-card h3 { margin: 0 0 12px; font-size: 1.2rem; line-height: 1.4; }
+        .problem-card p, .workflow-card p, .faq-card p, .check-card p { margin: 0; color: var(--muted); font-size: 0.95rem; line-height: 1.6; }
+
+        /* Screens Tour Layout */
+        .detail-layout { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 24px; }
+        .showcase-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .showcase-large { grid-row: span 2; padding: 24px; border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 20px; }
+        .showcase-small { padding: 24px; border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: 16px; }
+        .showcase-large figure, .showcase-small figure { margin: 0; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow-sm); }
+        .showcase-copy { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+        .showcase-copy h3, .showcase-small h3 { margin: 0 0 8px; font-size: 1.1rem; line-height: 1.4; }
+        .showcase-copy p, .showcase-small p { margin: 0; color: var(--muted); font-size: 0.95rem; line-height: 1.6; }
+        .showcase-badge { white-space: nowrap; padding: 6px 12px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-size: 0.75rem; font-weight: 800; }
+        
+        .detail-copy { padding: 32px; border-radius: var(--radius-lg); align-self: start; }
+        .detail-copy h3 { margin: 0 0 16px; font-size: 1.25rem; }
+        .detail-copy p { margin: 0 0 20px; color: var(--muted); font-size: 1rem; line-height: 1.6; }
+        .detail-copy ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+        .detail-copy li { display: flex; gap: 12px; align-items: flex-start; color: var(--muted); font-size: 0.95rem; line-height: 1.6; }
+        .detail-copy li::before { content: ""; width: 8px; height: 8px; margin-top: 8px; border-radius: 50%; background: var(--brand); flex: none; }
+
+        /* Workflow Grid */
+        .workflow-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .workflow-card { padding: 32px; border-radius: var(--radius-lg); }
+        .step-chip { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; background: var(--brand); color: #fff; font-weight: 800; font-size: 1.1rem; margin-bottom: 20px; box-shadow: 0 8px 16px rgba(43, 122, 128, 0.2); }
+
+        /* Checks & FAQ */
+        .check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .check-card, .faq-card { padding: 32px; border-radius: var(--radius-lg); }
+        .check-list, .faq-list { display: grid; gap: 16px; margin-top: 24px; }
+        .check-item, .faq-item { padding: 20px; border-radius: 16px; background: #fff; border: 1px solid var(--line); box-shadow: var(--shadow-sm); }
+        .check-item strong, .faq-item strong { display: block; margin-bottom: 8px; font-size: 1rem; color: var(--ink); }
+
+        /* Download */
+        .download-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: stretch; }
+        .download-copy, .download-box { padding: 40px; border-radius: var(--radius-xl); }
+        .download-points { margin-top: 24px; display: grid; gap: 14px; }
+        .download-points div { display: flex; gap: 12px; align-items: flex-start; color: var(--muted); line-height: 1.6; font-size: 0.95rem; }
+        .download-points div::before { content: ""; width: 8px; height: 8px; border-radius: 50%; margin-top: 8px; background: var(--accent); flex: none; }
+        
+        .download-box { background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%); color: #fff; box-shadow: 0 20px 40px rgba(31, 98, 103, 0.3); }
+        .download-box h3 { margin: 0 0 12px; font-size: 1.5rem; }
+        .download-box p { margin: 0; color: rgba(255,255,255,0.8); line-height: 1.6; }
+        .download-meta { margin: 24px 0; display: grid; gap: 12px; }
+        .download-meta div { display: flex; justify-content: space-between; padding: 14px 16px; border-radius: 12px; background: rgba(255, 255, 255, 0.1); font-size: 0.9rem; }
+        
+        .download-link {
+            display: flex; width: 100%; align-items: center; justify-content: center; gap: 10px;
+            min-height: 56px; border-radius: 16px; background: #fff; color: var(--brand-dark);
+            font-weight: 800; font-size: 1rem; box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15); transition: transform 0.2s ease;
+        }
+        .download-link:hover { transform: translateY(-3px); }
+        .download-footnote { margin-top: 16px; color: rgba(255,255,255,0.7); font-size: 0.85rem; line-height: 1.5; text-align: center; }
+
+        .mobile-bottom-cta { display: none; }
+        footer { padding: 32px 0 64px; color: var(--muted); font-size: 0.9rem; }
+        .footer-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; padding-top: 24px; border-top: 1px solid var(--line); }
+
+        /* Animation */
+        .reveal { opacity: 0; transform: translateY(20px); animation: reveal-up 0.6s ease forwards; }
+        .reveal-delay-1 { animation-delay: 0.1s; }
+        .reveal-delay-2 { animation-delay: 0.2s; }
+        .reveal-delay-3 { animation-delay: 0.3s; }
+        @keyframes reveal-up { to { opacity: 1; transform: translateY(0); } }
+
+        /* Responsive */
+        @media (max-width: 1040px) {
+            .hero-grid, .detail-layout, .check-grid, .download-panel { grid-template-columns: 1fr; }
+            .hero-media { min-height: 400px; margin-top: 40px; }
+            .stats, .problem-grid, .workflow-grid { grid-template-columns: repeat(2, 1fr); }
+            .usecase-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 760px) {
+            .nav, .header-cta, .actions .lang-switch { display: none; }
+            .mobile-toggle { display: inline-grid; place-items: center; }
+            .mobile-nav.open { display: block; }
+            
+            h1 { font-size: clamp(2rem, 8vw, 3rem); }
+            .hero-media { min-height: 380px; }
+            .shot-main { inset: 10px 10px 0 0; }
+            .shot-float { width: 55%; right: 0; bottom: 30px; }
+            .shot-dialog { width: 50%; left: 0; }
+
+            .stats, .usecase-grid, .problem-grid, .workflow-grid, .showcase-grid { grid-template-columns: 1fr; }
+            .showcase-large { grid-row: auto; }
+            .showcase-copy { flex-direction: column; }
+            .footer-row { flex-direction: column; align-items: flex-start; }
+
+            .mobile-bottom-cta { display: block; position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 60; }
+            .mobile-bottom-cta a {
+                display: flex; width: 100%; align-items: center; justify-content: center; gap: 10px;
+                min-height: 56px; border-radius: 16px; background: var(--brand); color: #fff;
+                font-weight: 800; box-shadow: 0 16px 32px rgba(43, 122, 128, 0.3);
+            }
+            body { padding-bottom: 80px; }
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="container header-row">
-            <a href="#" class="brand">
-                <div class="brand-mark"><img src="./ppt-txt2img.png" width="24" height="24" alt=""></div>
-                <div class="brand-text">
-                    <small>LAHUMAN</small>
-                    <strong data-i18n="brandTitle">PPT 텍스트-이미지 변환기</strong>
-                </div>
-            </a>
-            <nav class="nav">
-                <a href="#features" data-i18n="navOverview">기능</a>
-                <a href="#workflow" data-i18n="navWorkflow">흐름</a>
-                <a href="#faq">FAQ</a>
-            </nav>
-            <div style="display: flex; gap: 12px; align-items: center;">
-                <div class="lang-switch">
-                    <button class="lang-btn active" data-lang-switch="ko">KR</button>
-                    <button class="lang-btn" data-lang-switch="en">EN</button>
-                </div>
-                <a href="#download" class="btn btn-primary" style="padding: 10px 20px; font-size: 13px; border-radius: 12px;" data-i18n="headerCta">다운로드</a>
-            </div>
-        </div>
-    </header>
-
-    <main>
-        <section class="hero">
+    <div class="shell">
+        <header>
             <div class="container">
-                <div class="eyebrow" data-i18n="heroEyebrow">PowerPoint 배포를 더 완벽하게</div>
-                <h1 data-i18n-html="heroTitle">PPT 레이아웃,<br><span class="headline-accent">그대로</span> 유지하세요</h1>
-                <p data-i18n="heroSubtitle">글꼴이 깨지고 줄바꿈이 틀어지는 불안함은 이제 끝. 텍스트를 고화질 이미지로 변환하여 어떤 PC에서도 당신의 디자인을 지켜줍니다.</p>
-                <div class="cta-group">
-                    <a href="https://github.com/lahuman/ppt-text2img/releases/download/1.1/ppt-txt2img.exe" class="btn btn-primary">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 3v12m0 0l5-5m-5 5l-5-5M5 21h14"/></svg>
-                        <span data-i18n="heroPrimaryBtn">Windows용 다운로드</span>
+                <div class="header-row">
+                    <a class="brand" href="#top">
+                        <span class="brand-mark">
+                            <img src="./ppt-txt2img.png" alt="PPT Text to Image Converter" />
+                        </span>
+                        <span>
+                            <small>lahuman</small>
+                            <strong data-i18n="brandTitle">PPT 텍스트-이미지 변환기</strong>
+                        </span>
                     </a>
-                    <a href="https://github.com/lahuman/ppt-text2img" class="btn btn-secondary" data-i18n="heroSecondaryBtn">GitHub 프로젝트</a>
-                </div>
 
-                <div class="preview-area">
-                    <div class="main-shot">
-                        <img src="./ko.png" alt="App Preview">
-                    </div>
-                </div>
-            </div>
-        </section>
+                    <nav class="nav">
+                        <a href="#overview" data-i18n="navOverview">문제 해결</a>
+                        <a href="#screens" data-i18n="navScreens">화면 소개</a>
+                        <a href="#workflow" data-i18n="navWorkflow">사용 흐름</a>
+                        <a href="#download" data-i18n="navDownload">다운로드</a>
+                    </nav>
 
-        <section id="features" style="background: #fff;">
-            <div class="container">
-                <div class="section-title">
-                    <h2 data-i18n="overviewTitle">왜 이 도구가 필요한가요?</h2>
-                    <p data-i18n="overviewLead">실무자의 고민을 가장 완벽하게 해결합니다.</p>
-                </div>
-                <div class="grid-3">
-                    <div class="card">
-                        <div class="icon">T</div>
-                        <h3 data-i18n="problem1Title">완벽한 레이아웃 보존</h3>
-                        <p data-i18n="problem1Body">상대방 PC에 폰트가 없어도 이미지가 텍스트의 자리를 고정하여 시각적 오류를 원천 차단합니다.</p>
-                    </div>
-                    <div class="card">
-                        <div class="icon">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div class="actions">
+                        <a class="header-cta" href="#download" data-i18n="headerCta">바로 다운로드</a>
+                        <div class="lang-switch" role="group" aria-label="Language Switcher">
+                            <button type="button" class="lang-btn active" data-lang-switch="ko">KR</button>
+                            <button type="button" class="lang-btn" data-lang-switch="en">EN</button>
                         </div>
-                        <h3 data-i18n="problem2Title">압도적인 시간 절약</h3>
-                        <p data-i18n="problem2Body">발표 직전 다른 PC에서 텍스트를 일일이 수정하는 스트레스에서 해방되세요.</p>
+                        <button id="menuButton" class="mobile-toggle" type="button" aria-label="Open menu">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
                     </div>
-                    <div class="card">
-                        <div class="icon">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                </div>
+
+                <div id="mobileNav" class="mobile-nav">
+                    <div class="mobile-nav-inner">
+                        <a href="#overview" data-i18n="navOverview">문제 해결</a>
+                        <a href="#screens" data-i18n="navScreens">화면 소개</a>
+                        <a href="#workflow" data-i18n="navWorkflow">사용 흐름</a>
+                        <a href="#download" data-i18n="navDownload">다운로드</a>
+                        <div class="lang-switch" role="group" aria-label="Mobile Language Switcher" style="margin-top:12px; width:100%; justify-content:center;">
+                            <button type="button" class="lang-btn active" data-lang-switch="ko">한국어</button>
+                            <button type="button" class="lang-btn" data-lang-switch="en">English</button>
                         </div>
-                        <h3 data-i18n="stat3Value">강력한 로컬 보안</h3>
-                        <p data-i18n="stat3Label">문서를 외부 서버에 업로드하지 않습니다. 오직 당신의 PC 내에서만 안전하게 변환됩니다.</p>
                     </div>
                 </div>
             </div>
-        </section>
+        </header>
 
-        <section id="workflow">
+        <main id="top">
+            <section class="hero">
+                <div class="container">
+                    <div class="hero-grid">
+                        <div class="hero-copy">
+                            <div class="eyebrow reveal">
+                                <span class="eyebrow-dot"></span>
+                                <span data-i18n="heroEyebrow">PowerPoint 배포용 문서를 더 안전하게</span>
+                            </div>
+                            <div class="hero-notes reveal reveal-delay-1" style="margin-top:16px;">
+                                <span class="hero-note" data-i18n="releaseBadge">Latest Release v1.1</span>
+                                <span class="hero-note" data-i18n="releaseBadgeSub">UI polish + visible progress + safer pre-checks</span>
+                            </div>
+                            <h1 class="reveal reveal-delay-1" data-i18n-html="heroTitle">
+                                PPT 텍스트를<br><span class="headline-accent">이미지로 바꿔</span><br>레이아웃을 지킵니다
+                            </h1>
+                            <p class="reveal reveal-delay-2" data-i18n="heroSubtitle">
+                                다른 PC에서 글꼴이 바뀌거나 줄바꿈이 틀어져 발표 자료가 망가지는 일을 줄이세요.
+                                이 도구는 슬라이드 안의 텍스트를 이미지로 바꾸어, 전달용 PPT를 더 안정적으로 만들어 줍니다.
+                            </p>
+                            <div class="cta-row reveal reveal-delay-3">
+                                <a class="cta-primary" href="https://github.com/lahuman/ppt-text2img/releases/download/1.1/ppt-txt2img.exe">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l5-5m-5 5l-5-5M5 21h14" />
+                                    </svg>
+                                    <span data-i18n="heroPrimaryBtn">Windows용 다운로드</span>
+                                </a>
+                                <a class="cta-secondary" href="https://github.com/lahuman/ppt-text2img">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 .5C5.649.5.5 5.649.5 12A11.5 11.5 0 0 0 8.36 22.2c.576.106.786-.244.786-.549 0-.272-.01-.994-.016-1.95-3.183.693-3.855-1.533-3.855-1.533-.52-1.322-1.27-1.674-1.27-1.674-1.038-.71.078-.696.078-.696 1.148.08 1.752 1.18 1.752 1.18 1.02 1.749 2.674 1.244 3.326.952.103-.739.399-1.244.726-1.53-2.54-.289-5.212-1.27-5.212-5.653 0-1.249.446-2.27 1.177-3.069-.118-.288-.51-1.45.112-3.024 0 0 .96-.307 3.143 1.173a10.968 10.968 0 0 1 5.724 0c2.182-1.48 3.142-1.173 3.142-1.173.624 1.574.231 2.736.114 3.024.733.799 1.176 1.82 1.176 3.069 0 4.394-2.677 5.36-5.226 5.644.409.352.774 1.044.774 2.104 0 1.52-.014 2.745-.014 3.119 0 .309.207.661.792.548A11.5 11.5 0 0 0 23.5 12C23.5 5.649 18.351.5 12 .5Z" />
+                                    </svg>
+                                    <span data-i18n="heroSecondaryBtn">GitHub 보기</span>
+                                </a>
+                            </div>
+                            <div class="hero-notes reveal reveal-delay-3">
+                                <span class="hero-note" data-i18n="heroNote1">Windows 10 / 11 지원</span>
+                                <span class="hero-note" data-i18n="heroNote2">Microsoft PowerPoint 필요</span>
+                                <span class="hero-note" data-i18n="heroNote3">로컬에서만 처리</span>
+                            </div>
+                        </div>
+
+                        <div class="hero-media reveal reveal-delay-2" aria-label="Application preview">
+                            <div class="shot-main">
+                                <img src="./ko.png" alt="Korean UI preview" loading="eager" />
+                                <div class="shot-caption" data-i18n="heroShotMain">실제 한국어 UI와 진행 바 화면</div>
+                            </div>
+                            <div class="shot-float">
+                                <img src="./en.png" alt="English UI preview" loading="lazy" />
+                                <div class="shot-caption" data-i18n="heroShotSub">영문 사용자도 바로 사용할 수 있는 인터페이스</div>
+                            </div>
+                            <div class="shot-dialog">
+                                <img src="./start_confirm.png" alt="Start confirmation dialog" loading="lazy" />
+                                <div class="shot-caption" data-i18n="heroShotDialog">변환 전 확인 팝업으로 실수 방지</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="stat-strip">
+                <div class="container">
+                    <div class="stats">
+                        <article class="surface stat-card reveal">
+                            <strong data-i18n="stat1Value">100%</strong>
+                            <span data-i18n="stat1Label">텍스트 배치를 이미지로 고정해 레이아웃 변형 위험을 줄입니다.</span>
+                        </article>
+                        <article class="surface stat-card reveal reveal-delay-1">
+                            <strong data-i18n="stat2Value">KR / EN</strong>
+                            <span data-i18n="stat2Label">한국어와 영어 UI를 함께 제공해 팀 배포에도 편합니다.</span>
+                        </article>
+                        <article class="surface stat-card reveal reveal-delay-2">
+                            <strong data-i18n="stat3Value">Local</strong>
+                            <span data-i18n="stat3Label">문서를 외부 서버에 올리지 않고 내 PC에서 바로 처리합니다.</span>
+                        </article>
+                        <article class="surface stat-card reveal reveal-delay-3">
+                            <strong data-i18n="stat4Value">3 Steps</strong>
+                            <span data-i18n="stat4Label">파일 선택, 확인, 변환 완료까지 흐름이 단순합니다.</span>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section section-tight">
+                <div class="container">
+                    <div class="surface usecase-panel reveal">
+                        <div class="usecase-head">
+                            <div class="usecase-head-copy">
+                                <span class="section-kicker" data-i18n="usecaseKicker">Best Fit</span>
+                                <h2 data-i18n="usecaseTitle">이런 상황이라면 더 유용하게 느껴집니다</h2>
+                                <p class="lead" data-i18n="usecaseLead">
+                                    단순히 “텍스트를 이미지로 바꾸는 도구”가 아니라, 전달 직전의 불안을 줄여주는 실무용 유틸리티로 소개될 수 있도록 맥락을 더했습니다.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="usecase-grid">
+                            <article class="usecase-card">
+                                <div class="usecase-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h8M8 14h5M5 5h14v14H5z" />
+                                    </svg>
+                                </div>
+                                <h3 data-i18n="usecase1Title">고객사 전달용 PPT를 만들 때</h3>
+                                <p data-i18n="usecase1Body">상대방 PC에 폰트가 없을 가능성이 있으면, 전달본을 따로 준비할 때 특히 유용합니다.</p>
+                            </article>
+                            <article class="usecase-card">
+                                <div class="usecase-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M7 11h10M9 15h6M5 5h14v14H5z" />
+                                    </svg>
+                                </div>
+                                <h3 data-i18n="usecase2Title">회의실 PC나 행사장 PC에서 발표할 때</h3>
+                                <p data-i18n="usecase2Body">내 노트북이 아닌 환경에서 열어도 화면 차이를 줄이고 싶을 때 신뢰도가 올라갑니다.</p>
+                            </article>
+                            <article class="usecase-card">
+                                <div class="usecase-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6" />
+                                    </svg>
+                                </div>
+                                <h3 data-i18n="usecase3Title">작업용 원본과 배포용 파일을 분리할 때</h3>
+                                <p data-i18n="usecase3Body">편집용 원본은 유지하고, 전달용으로만 안전한 버전을 하나 더 만드는 흐름에 잘 맞습니다.</p>
+                            </article>
+                            <article class="usecase-card">
+                                <div class="usecase-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+                                    </svg>
+                                </div>
+                                <h3 data-i18n="usecase4Title">혼자보다 팀과 함께 쓸 때</h3>
+                                <p data-i18n="usecase4Body">한국어/영어 UI와 분명한 안내 문구 덕분에 팀원에게 넘겨도 설명 부담이 적습니다.</p>
+                            </article>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="overview" class="section">
+                <div class="container">
+                    <div class="section-head">
+                        <span class="section-kicker" data-i18n="overviewKicker">Problem Solved</span>
+                        <h2 data-i18n="overviewTitle">상대방 PC 환경이 달라도, 보여지는 결과를 더 일정하게 유지합니다</h2>
+                        <p class="lead" data-i18n="overviewLead">
+                            배포용 PPT는 폰트, 줄바꿈, 텍스트 영역 오버플로우 때문에 마지막 순간에 무너지는 경우가 많습니다.
+                            이 프로그램은 바로 그 불안 요소를 줄이기 위해 만들어졌습니다.
+                        </p>
+                    </div>
+
+                    <div class="problem-grid">
+                        <article class="surface problem-card reveal">
+                            <div class="icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h7m-7 4h10M4 5h16v14H4z" />
+                                </svg>
+                            </div>
+                            <h3 data-i18n="problem1Title">폰트가 바뀌어도 내용 위치가 흔들리지 않게</h3>
+                            <p data-i18n="problem1Body">
+                                수신 PC에 같은 글꼴이 없어도, 텍스트를 이미지로 바꾸어 핵심 타이포그래피와 배치를 더 안정적으로 지킵니다.
+                            </p>
+                        </article>
+                        <article class="surface problem-card reveal reveal-delay-1">
+                            <div class="icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <h3 data-i18n="problem2Title">다시 손보는 시간을 줄이기</h3>
+                            <p data-i18n="problem2Body">
+                                발표 직전 다른 PC에서 틀어진 화면을 급하게 수정하는 대신, 미리 변환된 전달본을 준비할 수 있습니다.
+                            </p>
+                        </article>
+                        <article class="surface problem-card reveal reveal-delay-2">
+                            <div class="icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+                                </svg>
+                            </div>
+                            <h3 data-i18n="problem3Title">도구 자체는 어렵지 않게</h3>
+                            <p data-i18n="problem3Body">
+                                복잡한 설정 없이 PPT 파일만 선택하면 변환이 시작되며, 상태 텍스트와 진행 바도 바로 확인할 수 있습니다.
+                            </p>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <section id="screens" class="section">
+                <div class="container">
+                    <div class="section-head">
+                        <span class="section-kicker" data-i18n="screensKicker">Screen Tour</span>
+                        <h2 data-i18n="screensTitle">실제 프로그램 화면을 중심으로, 처음 써도 헷갈리지 않게 구성했습니다</h2>
+                        <p class="lead" data-i18n="screensLead">
+                            선택한 파일, 저장 위치 안내, 변환 전 체크리스트, 진행 상태, 언어 전환까지
+                            사용자가 실수하기 쉬운 부분을 화면 자체에서 먼저 잡아줍니다.
+                        </p>
+                    </div>
+
+                    <div class="detail-layout">
+                        <div class="showcase-grid">
+                            <article class="surface showcase-large reveal">
+                                <div class="showcase-copy">
+                                    <div>
+                                        <h3 data-i18n="screenMainTitle">메인 화면에서 필요한 정보가 바로 보입니다</h3>
+                                        <p data-i18n="screenMainBody">
+                                            선택한 파일명, 결과 저장 위치, 변환 전 주의 사항, 현재 진행 상태를 한 화면 안에서 확인할 수 있습니다.
+                                        </p>
+                                    </div>
+                                    <span class="showcase-badge" data-i18n="screenMainBadge">Korean UI</span>
+                                </div>
+                                <figure>
+                                    <img src="./ko.png" alt="Korean interface screenshot" loading="lazy" />
+                                </figure>
+                            </article>
+
+                            <article class="surface showcase-small reveal reveal-delay-1">
+                                <div>
+                                    <h3 data-i18n="screenEnTitle">영문 UI도 자연스럽게 지원합니다</h3>
+                                    <p data-i18n="screenEnBody">
+                                        해외 파트너나 영문 환경 사용자도 추가 설명 없이 바로 사용할 수 있도록 전체 UI가 전환됩니다.
+                                    </p>
+                                </div>
+                                <figure>
+                                    <img src="./en.png" alt="English interface screenshot" loading="lazy" />
+                                </figure>
+                            </article>
+
+                            <article class="surface showcase-small reveal reveal-delay-2">
+                                <div>
+                                    <h3 data-i18n="screenConfirmTitle">시작 전 한 번 더 확인해 줍니다</h3>
+                                    <p data-i18n="screenConfirmBody">
+                                        PowerPoint 종료 여부와 대상 파일이 열려 있지 않은지 체크해, 변환 실패 가능성을 줄입니다.
+                                    </p>
+                                </div>
+                                <figure>
+                                    <img src="./start_confirm.png" alt="Start confirm dialog screenshot" loading="lazy" />
+                                </figure>
+                            </article>
+                        </div>
+
+                        <aside class="surface detail-copy reveal reveal-delay-2">
+                            <h3 data-i18n="detailAsideTitle">이 화면이 주는 안심 포인트</h3>
+                            <p data-i18n="detailAsideBody">
+                                “변환은 되겠지”가 아니라 “실수할 곳을 미리 막아준다”는 느낌을 주는 구성이 핵심입니다.
+                            </p>
+                            <ul>
+                                <li data-i18n="detailPoint1">긴 파일명을 선택해도 어떤 파일을 작업 중인지 화면에서 계속 확인할 수 있습니다.</li>
+                                <li data-i18n="detailPoint2">변환 전 주의 사항을 항상 노출해 PowerPoint 종료와 파일 잠금 문제를 놓치지 않게 합니다.</li>
+                                <li data-i18n="detailPoint3">진행 텍스트와 진행 바가 함께 보여서 현재 상태를 직관적으로 파악할 수 있습니다.</li>
+                                <li data-i18n="detailPoint4">한국어와 영어 UI를 모두 제공해 팀 내부 공유나 외부 전달에도 부담이 적습니다.</li>
+                            </ul>
+                        </aside>
+                    </div>
+                </div>
+            </section>
+
+            <section id="workflow" class="section">
+                <div class="container">
+                    <div class="section-head">
+                        <span class="section-kicker" data-i18n="workflowKicker">Workflow</span>
+                        <h2 data-i18n="workflowTitle">사용 흐름은 짧고, 체크 포인트는 분명하게</h2>
+                        <p class="lead" data-i18n="workflowLead">
+                            낯선 메뉴를 뒤질 필요 없이, 한 번의 선택과 한 번의 확인만으로 변환을 시작할 수 있습니다.
+                        </p>
+                    </div>
+
+                    <div class="workflow-grid">
+                        <article class="surface workflow-card reveal">
+                            <div class="step-chip">1</div>
+                            <h3 data-i18n="step1Title">PPT 파일 선택</h3>
+                            <p data-i18n="step1Body">변환할 파일을 선택하면, 저장 위치와 대상 파일명이 바로 표시됩니다.</p>
+                        </article>
+                        <article class="surface workflow-card reveal reveal-delay-1">
+                            <div class="step-chip">2</div>
+                            <h3 data-i18n="step2Title">시작 전 확인</h3>
+                            <p data-i18n="step2Body">PowerPoint 종료 여부와 파일 잠금 상태를 다시 확인해 실수를 줄입니다.</p>
+                        </article>
+                        <article class="surface workflow-card reveal reveal-delay-2">
+                            <div class="step-chip">3</div>
+                            <h3 data-i18n="step3Title">진행 확인 후 완료</h3>
+                            <p data-i18n="step3Body">진행 상태를 보면서 기다리면, 원본 폴더에 새 결과 파일이 저장됩니다.</p>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <div class="container">
+                    <div class="check-grid">
+                        <article class="surface check-card reveal">
+                            <h3 data-i18n="checkTitle">변환 전에 꼭 확인하세요</h3>
+                            <p data-i18n="checkLead">
+                                실제 PowerPoint 엔진을 사용하므로, 아래 조건을 맞춰두면 훨씬 안정적으로 작업할 수 있습니다.
+                            </p>
+                            <div class="check-list">
+                                <div class="check-item">
+                                    <strong data-i18n="check1Title">Microsoft PowerPoint를 종료</strong>
+                                    <p data-i18n="check1Body">변환 시작 전 PowerPoint를 완전히 닫아 두면 파일 충돌과 잠금 문제를 줄일 수 있습니다.</p>
+                                </div>
+                                <div class="check-item">
+                                    <strong data-i18n="check2Title">대상 파일이 열려 있지 않은지 확인</strong>
+                                    <p data-i18n="check2Body">같은 PPT가 다른 창에서 열려 있으면 저장이나 변환 과정에서 실패할 수 있습니다.</p>
+                                </div>
+                                <div class="check-item">
+                                    <strong data-i18n="check3Title">배포용이라면 복사본 권장</strong>
+                                    <p data-i18n="check3Body">작업용 원본과 전달용 변환본을 분리하면 문서 관리가 훨씬 수월해집니다.</p>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="surface faq-card reveal reveal-delay-1">
+                            <h3 data-i18n="faqTitle">자주 궁금해하는 점</h3>
+                            <p data-i18n="faqLead">
+                                간단하지만 실제 사용 맥락에서 많이 묻는 질문을 먼저 정리했습니다.
+                            </p>
+                            <div class="faq-list">
+                                <div class="faq-item">
+                                    <strong data-i18n="faq1Q">웹 서비스가 아니라 설치형 프로그램인 이유는 무엇인가요?</strong>
+                                    <p data-i18n="faq1A">보안이 필요한 문서를 외부 서버에 올리지 않고 로컬 PC 안에서만 처리하기 위해서입니다.</p>
+                                </div>
+                                <div class="faq-item">
+                                    <strong data-i18n="faq2Q">변환 후에도 발표용으로 보기 괜찮나요?</strong>
+                                    <p data-i18n="faq2A">텍스트를 고화질 이미지로 내보내기 때문에 일반적인 발표 환경에서는 선명도를 충분히 유지합니다.</p>
+                                </div>
+                                <div class="faq-item">
+                                    <strong data-i18n="faq3Q">영문 사용자도 사용할 수 있나요?</strong>
+                                    <p data-i18n="faq3A">네. UI 전체를 한국어와 영어로 전환할 수 있어 팀 배포나 해외 협업에도 적합합니다.</p>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <section id="download" class="section">
+                <div class="container">
+                    <div class="download-panel">
+                        <article class="surface download-copy reveal">
+                            <span class="section-kicker" data-i18n="downloadKicker">Get Started</span>
+                            <h2 data-i18n="downloadTitle">바로 내려받아, 전달용 PPT를 더 안정적으로 준비해 보세요</h2>
+                            <p class="lead" data-i18n="downloadLead">
+                                발표 직전 다른 PC에서 화면이 달라지는 일을 줄이고 싶다면, 이 도구가 가장 먼저 챙겨야 할 전달본을 만들어 줍니다.
+                            </p>
+                            <div class="download-points">
+                                <div data-i18n="downloadPoint1">파일 선택부터 완료까지 UI가 단순해 처음 써도 부담이 적습니다.</div>
+                                <div data-i18n="downloadPoint2">주의 사항과 확인 팝업이 포함되어 있어 변환 실패를 줄이는 흐름을 제공합니다.</div>
+                                <div data-i18n="downloadPoint3">한국어와 영어 UI 스크린샷 그대로, 실제 배포 전 체크용 도구로 쓰기 좋습니다.</div>
+                            </div>
+                        </article>
+
+                        <aside class="download-box reveal reveal-delay-1">
+                            <h3 data-i18n="downloadBoxTitle">Windows 실행 파일 다운로드</h3>
+                            <p data-i18n="downloadBoxBody">
+                                PowerPoint가 설치된 Windows 환경에서 바로 실행할 수 있습니다.
+                            </p>
+                            <div class="download-meta">
+                                <div>
+                                    <span data-i18n="meta0Label">최신 버전</span>
+                                    <strong data-i18n="meta0Value">v1.1</strong>
+                                </div>
+                                <div>
+                                    <span data-i18n="meta1Label">운영체제</span>
+                                    <strong data-i18n="meta1Value">Windows 10 / 11</strong>
+                                </div>
+                                <div>
+                                    <span data-i18n="meta2Label">필수 구성</span>
+                                    <strong data-i18n="meta2Value">Microsoft PowerPoint</strong>
+                                </div>
+                                <div>
+                                    <span data-i18n="meta3Label">처리 방식</span>
+                                    <strong data-i18n="meta3Value">Offline / Local</strong>
+                                </div>
+                            </div>
+                            <a class="download-link" href="https://github.com/lahuman/ppt-text2img/releases/download/1.1/ppt-txt2img.exe">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l5-5m-5 5l-5-5M5 21h14" />
+                                </svg>
+                                <span data-i18n="downloadBtn">무료로 다운로드</span>
+                            </a>
+                            <p class="download-footnote" data-i18n="downloadFootnote">
+                                GitHub Releases에서 바로 내려받을 수 있으며, 설치 후 로컬 환경에서 곧바로 사용할 수 있습니다.
+                            </p>
+                        </aside>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
             <div class="container">
-                <div class="section-title">
-                    <h2 data-i18n="workflowTitle">단 3단계면 충분합니다</h2>
-                </div>
-                <div class="grid-3">
-                    <div class="step-card">
-                        <div class="step-num">1</div>
-                        <h3 data-i18n="step1Title">파일 선택</h3>
-                        <p data-i18n="step1Body">변환할 PPT 파일을 불러오세요.</p>
-                    </div>
-                    <div class="step-card">
-                        <div class="step-num">2</div>
-                        <h3 data-i18n="step2Title">사전 체크</h3>
-                        <p data-i18n="step2Body">충돌 방지를 위해 파워포인트를 닫아주세요.</p>
-                    </div>
-                    <div class="step-card">
-                        <div class="step-num">3</div>
-                        <h3 data-i18n="step3Title">변환 완료</h3>
-                        <p data-i18n="step3Body">새로운 전달본이 즉시 생성됩니다.</p>
-                    </div>
+                <div class="footer-row">
+                    <div data-i18n="footerLeft">© 2026 lahuman. Built for safer PPT delivery.</div>
+                    <div data-i18n="footerRight">Fonts, line breaks, and final delivery deserve fewer surprises.</div>
                 </div>
             </div>
-        </section>
+        </footer>
 
-        <section style="background: var(--brand); color: #fff; text-align: center;">
-            <div class="container" id="download">
-                <h2 style="font-size: 32px; margin-bottom: 24px;" data-i18n="downloadTitle">지금 바로 시작해보세요</h2>
-                <a href="https://github.com/lahuman/ppt-text2img/releases/download/1.1/ppt-txt2img.exe" class="btn btn-secondary" style="background: #fff; padding: 20px 40px; font-size: 18px;">
-                    <span data-i18n="downloadBtn">Windows용 무료 다운로드</span>
-                </a>
-                <p style="margin-top: 24px; opacity: 0.8; font-size: 14px;" data-i18n="heroNote1">Windows 10 / 11 환경을 지원합니다</p>
-            </div>
-        </section>
-    </main>
-
-    <footer>
-        <div class="container footer-content">
-            <div data-i18n="footerLeft">© 2026 lahuman. Built for safer PPT delivery.</div>
-            <div data-i18n="footerRight">본 도구는 사용자의 데이터를 수집하지 않습니다.</div>
+        <div class="mobile-bottom-cta">
+            <a href="https://github.com/lahuman/ppt-text2img/releases/download/1.1/ppt-txt2img.exe">
+                <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l5-5m-5 5l-5-5M5 21h14" />
+                </svg>
+                <span data-i18n="mobileDownloadBtn">Windows용 파일 받기</span>
+            </a>
         </div>
-    </footer>
+    </div>
 
     <script>
-        // 기존 다국어 스크립트 그대로 유지 (translations 데이터는 그대로 사용하시되, UI와 매칭되는 키만 확인)
         (function () {
-            const translations = { /* ... 위 원본 코드의 translations 데이터 복사 ... */ };
-            // (생략: 기존 스크립트 로직 그대로 붙여넣으시면 됩니다)
+            const translations = {
+                ko: {
+                    brandTitle: "PPT 텍스트-이미지 변환기",
+                    navOverview: "문제 해결",
+                    navScreens: "화면 소개",
+                    navWorkflow: "사용 흐름",
+                    navDownload: "다운로드",
+                    headerCta: "바로 다운로드",
+                    heroEyebrow: "PowerPoint 배포용 문서를 더 안전하게",
+                    releaseBadge: "Latest Release v1.1",
+                    releaseBadgeSub: "UI polish + visible progress + safer pre-checks",
+                    heroTitle: 'PPT 텍스트를<br><span class="headline-accent">이미지로 바꿔</span><br>레이아웃을 지킵니다',
+                    heroSubtitle: "다른 PC에서 글꼴이 바뀌거나 줄바꿈이 틀어져 발표 자료가 망가지는 일을 줄이세요. 이 도구는 슬라이드 안의 텍스트를 이미지로 바꾸어, 전달용 PPT를 더 안정적으로 만들어 줍니다.",
+                    heroPrimaryBtn: "Windows용 다운로드",
+                    heroSecondaryBtn: "GitHub 보기",
+                    heroNote1: "Windows 10 / 11 지원",
+                    heroNote2: "Microsoft PowerPoint 필요",
+                    heroNote3: "로컬에서만 처리",
+                    heroShotMain: "실제 한국어 UI와 진행 바 화면",
+                    heroShotSub: "영문 사용자도 바로 사용할 수 있는 인터페이스",
+                    heroShotDialog: "변환 전 확인 팝업으로 실수 방지",
+                    stat1Value: "100%",
+                    stat1Label: "텍스트 배치를 이미지로 고정해 레이아웃 변형 위험을 줄입니다.",
+                    stat2Value: "KR / EN",
+                    stat2Label: "한국어와 영어 UI를 함께 제공해 팀 배포에도 편합니다.",
+                    stat3Value: "Local",
+                    stat3Label: "문서를 외부 서버에 올리지 않고 내 PC에서 바로 처리합니다.",
+                    stat4Value: "3 Steps",
+                    stat4Label: "파일 선택, 확인, 변환 완료까지 흐름이 단순합니다.",
+                    usecaseKicker: "Best Fit",
+                    usecaseTitle: "이런 상황이라면 더 유용하게 느껴집니다",
+                    usecaseLead: "단순히 “텍스트를 이미지로 바꾸는 도구”가 아니라, 전달 직전의 불안을 줄여주는 실무용 유틸리티로 소개될 수 있도록 맥락을 더했습니다.",
+                    usecase1Title: "고객사 전달용 PPT를 만들 때",
+                    usecase1Body: "상대방 PC에 폰트가 없을 가능성이 있으면, 전달본을 따로 준비할 때 특히 유용합니다.",
+                    usecase2Title: "회의실 PC나 행사장 PC에서 발표할 때",
+                    usecase2Body: "내 노트북이 아닌 환경에서 열어도 화면 차이를 줄이고 싶을 때 신뢰도가 올라갑니다.",
+                    usecase3Title: "작업용 원본과 배포용 파일을 분리할 때",
+                    usecase3Body: "편집용 원본은 유지하고, 전달용으로만 안전한 버전을 하나 더 만드는 흐름에 잘 맞습니다.",
+                    usecase4Title: "혼자보다 팀과 함께 쓸 때",
+                    usecase4Body: "한국어/영어 UI와 분명한 안내 문구 덕분에 팀원에게 넘겨도 설명 부담이 적습니다.",
+                    overviewKicker: "Problem Solved",
+                    overviewTitle: "상대방 PC 환경이 달라도, 보여지는 결과를 더 일정하게 유지합니다",
+                    overviewLead: "배포용 PPT는 폰트, 줄바꿈, 텍스트 영역 오버플로우 때문에 마지막 순간에 무너지는 경우가 많습니다. 이 프로그램은 바로 그 불안 요소를 줄이기 위해 만들어졌습니다.",
+                    problem1Title: "폰트가 바뀌어도 내용 위치가 흔들리지 않게",
+                    problem1Body: "수신 PC에 같은 글꼴이 없어도, 텍스트를 이미지로 바꾸어 핵심 타이포그래피와 배치를 더 안정적으로 지킵니다.",
+                    problem2Title: "다시 손보는 시간을 줄이기",
+                    problem2Body: "발표 직전 다른 PC에서 틀어진 화면을 급하게 수정하는 대신, 미리 변환된 전달본을 준비할 수 있습니다.",
+                    problem3Title: "도구 자체는 어렵지 않게",
+                    problem3Body: "복잡한 설정 없이 PPT 파일만 선택하면 변환이 시작되며, 상태 텍스트와 진행 바도 바로 확인할 수 있습니다.",
+                    screensKicker: "Screen Tour",
+                    screensTitle: "실제 프로그램 화면을 중심으로, 처음 써도 헷갈리지 않게 구성했습니다",
+                    screensLead: "선택한 파일, 저장 위치 안내, 변환 전 체크리스트, 진행 상태, 언어 전환까지 사용자가 실수하기 쉬운 부분을 화면 자체에서 먼저 잡아줍니다.",
+                    screenMainTitle: "메인 화면에서 필요한 정보가 바로 보입니다",
+                    screenMainBody: "선택한 파일명, 결과 저장 위치, 변환 전 주의 사항, 현재 진행 상태를 한 화면 안에서 확인할 수 있습니다.",
+                    screenMainBadge: "Korean UI",
+                    screenEnTitle: "영문 UI도 자연스럽게 지원합니다",
+                    screenEnBody: "해외 파트너나 영문 환경 사용자도 추가 설명 없이 바로 사용할 수 있도록 전체 UI가 전환됩니다.",
+                    screenConfirmTitle: "시작 전 한 번 더 확인해 줍니다",
+                    screenConfirmBody: "PowerPoint 종료 여부와 대상 파일이 열려 있지 않은지 체크해, 변환 실패 가능성을 줄입니다.",
+                    detailAsideTitle: "이 화면이 주는 안심 포인트",
+                    detailAsideBody: "“변환은 되겠지”가 아니라 “실수할 곳을 미리 막아준다”는 느낌을 주는 구성이 핵심입니다.",
+                    detailPoint1: "긴 파일명을 선택해도 어떤 파일을 작업 중인지 화면에서 계속 확인할 수 있습니다.",
+                    detailPoint2: "변환 전 주의 사항을 항상 노출해 PowerPoint 종료와 파일 잠금 문제를 놓치지 않게 합니다.",
+                    detailPoint3: "진행 텍스트와 진행 바가 함께 보여서 현재 상태를 직관적으로 파악할 수 있습니다.",
+                    detailPoint4: "한국어와 영어 UI를 모두 제공해 팀 내부 공유나 외부 전달에도 부담이 적습니다.",
+                    workflowKicker: "Workflow",
+                    workflowTitle: "사용 흐름은 짧고, 체크 포인트는 분명하게",
+                    workflowLead: "낯선 메뉴를 뒤질 필요 없이, 한 번의 선택과 한 번의 확인만으로 변환을 시작할 수 있습니다.",
+                    step1Title: "PPT 파일 선택",
+                    step1Body: "변환할 파일을 선택하면, 저장 위치와 대상 파일명이 바로 표시됩니다.",
+                    step2Title: "시작 전 확인",
+                    step2Body: "PowerPoint 종료 여부와 파일 잠금 상태를 다시 확인해 실수를 줄입니다.",
+                    step3Title: "진행 확인 후 완료",
+                    step3Body: "진행 상태를 보면서 기다리면, 원본 폴더에 새 결과 파일이 저장됩니다.",
+                    checkTitle: "변환 전에 꼭 확인하세요",
+                    checkLead: "실제 PowerPoint 엔진을 사용하므로, 아래 조건을 맞춰두면 훨씬 안정적으로 작업할 수 있습니다.",
+                    check1Title: "Microsoft PowerPoint를 종료",
+                    check1Body: "변환 시작 전 PowerPoint를 완전히 닫아 두면 파일 충돌과 잠금 문제를 줄일 수 있습니다.",
+                    check2Title: "대상 파일이 열려 있지 않은지 확인",
+                    check2Body: "같은 PPT가 다른 창에서 열려 있으면 저장이나 변환 과정에서 실패할 수 있습니다.",
+                    check3Title: "배포용이라면 복사본 권장",
+                    check3Body: "작업용 원본과 전달용 변환본을 분리하면 문서 관리가 훨씬 수월해집니다.",
+                    faqTitle: "자주 궁금해하는 점",
+                    faqLead: "간단하지만 실제 사용 맥락에서 많이 묻는 질문을 먼저 정리했습니다.",
+                    faq1Q: "웹 서비스가 아니라 설치형 프로그램인 이유는 무엇인가요?",
+                    faq1A: "보안이 필요한 문서를 외부 서버에 올리지 않고 로컬 PC 안에서만 처리하기 위해서입니다.",
+                    faq2Q: "변환 후에도 발표용으로 보기 괜찮나요?",
+                    faq2A: "텍스트를 고화질 이미지로 내보내기 때문에 일반적인 발표 환경에서는 선명도를 충분히 유지합니다.",
+                    faq3Q: "영문 사용자도 사용할 수 있나요?",
+                    faq3A: "네. UI 전체를 한국어와 영어로 전환할 수 있어 팀 배포나 해외 협업에도 적합합니다.",
+                    downloadKicker: "Get Started",
+                    downloadTitle: "바로 내려받아, 전달용 PPT를 더 안정적으로 준비해 보세요",
+                    downloadLead: "발표 직전 다른 PC에서 화면이 달라지는 일을 줄이고 싶다면, 이 도구가 가장 먼저 챙겨야 할 전달본을 만들어 줍니다.",
+                    downloadPoint1: "파일 선택부터 완료까지 UI가 단순해 처음 써도 부담이 적습니다.",
+                    downloadPoint2: "주의 사항과 확인 팝업이 포함되어 있어 변환 실패를 줄이는 흐름을 제공합니다.",
+                    downloadPoint3: "한국어와 영어 UI 스크린샷 그대로, 실제 배포 전 체크용 도구로 쓰기 좋습니다.",
+                    downloadBoxTitle: "Windows 실행 파일 다운로드",
+                    downloadBoxBody: "PowerPoint가 설치된 Windows 환경에서 바로 실행할 수 있습니다.",
+                    meta0Label: "최신 버전",
+                    meta0Value: "v1.1",
+                    meta1Label: "운영체제",
+                    meta1Value: "Windows 10 / 11",
+                    meta2Label: "필수 구성",
+                    meta2Value: "Microsoft PowerPoint",
+                    meta3Label: "처리 방식",
+                    meta3Value: "Offline / Local",
+                    downloadBtn: "무료로 다운로드",
+                    downloadFootnote: "GitHub Releases에서 바로 내려받을 수 있으며, 설치 후 로컬 환경에서 곧바로 사용할 수 있습니다.",
+                    mobileDownloadBtn: "Windows용 파일 받기",
+                    footerLeft: "© 2026 lahuman. Built for safer PPT delivery.",
+                    footerRight: "폰트, 줄바꿈, 최종 전달 문서는 예상치 못한 변수가 적어야 합니다."
+                },
+                en: {
+                    brandTitle: "PPT Text to Image Converter",
+                    navOverview: "Why It Helps",
+                    navScreens: "Screens",
+                    navWorkflow: "Workflow",
+                    navDownload: "Download",
+                    headerCta: "Download Now",
+                    heroEyebrow: "Safer delivery for PowerPoint files",
+                    releaseBadge: "Latest Release v1.1",
+                    releaseBadgeSub: "UI polish + visible progress + safer pre-checks",
+                    heroTitle: 'Turn PPT text<br>into <span class="headline-accent">images</span><br>to protect your layout',
+                    heroSubtitle: "Reduce the risk of broken fonts, shifted lines, and messy layout changes on another PC. This tool converts slide text into images so your delivery-ready PPT stays more consistent.",
+                    heroPrimaryBtn: "Download for Windows",
+                    heroSecondaryBtn: "View on GitHub",
+                    heroNote1: "Windows 10 / 11",
+                    heroNote2: "Microsoft PowerPoint required",
+                    heroNote3: "Processed locally",
+                    heroShotMain: "The actual Korean UI with visible progress",
+                    heroShotSub: "An English interface ready for bilingual teams",
+                    heroShotDialog: "A pre-flight confirmation dialog to prevent mistakes",
+                    stat1Value: "100%",
+                    stat1Label: "Keep text placement visually fixed by converting it into images.",
+                    stat2Value: "KR / EN",
+                    stat2Label: "Korean and English interfaces make team sharing easier.",
+                    stat3Value: "Local",
+                    stat3Label: "Your files stay on your PC without external server uploads.",
+                    stat4Value: "3 Steps",
+                    stat4Label: "Select a file, confirm, and finish with a simple workflow.",
+                    usecaseKicker: "Best Fit",
+                    usecaseTitle: "It feels especially useful in these real delivery scenarios",
+                    usecaseLead: "This is not just a text-to-image utility. It is positioned as a practical tool that lowers anxiety right before handoff or presentation time.",
+                    usecase1Title: "When preparing a client-ready PPT",
+                    usecase1Body: "If the recipient may not have your fonts installed, creating a safer delivery copy becomes much easier.",
+                    usecase2Title: "When presenting on a meeting-room or event PC",
+                    usecase2Body: "It is more reassuring when the file will open somewhere other than your own laptop.",
+                    usecase3Title: "When separating working files from delivery files",
+                    usecase3Body: "It fits a workflow where you keep the editable original and create one safer presentation copy.",
+                    usecase4Title: "When the tool will be shared across a team",
+                    usecase4Body: "Clear guidance plus Korean and English UI make it easier to hand off without extra explanation.",
+                    overviewKicker: "Problem Solved",
+                    overviewTitle: "Keep the final look more consistent, even on someone else's PC",
+                    overviewLead: "Shared presentations often break at the worst time because of fonts, wrapping, and text overflow. This tool was made to reduce exactly that kind of risk.",
+                    problem1Title: "Keep text layout from shifting when fonts change",
+                    problem1Body: "Even if the recipient does not have the same font installed, your key typography and placement stay visually more stable after conversion.",
+                    problem2Title: "Spend less time fixing last-minute issues",
+                    problem2Body: "Instead of repairing broken slides on another machine right before a meeting, prepare a converted delivery copy in advance.",
+                    problem3Title: "Make the tool itself easy to use",
+                    problem3Body: "You do not need a complex setup. Select a PPT file and the app shows status text and progress right away.",
+                    screensKicker: "Screen Tour",
+                    screensTitle: "The product is designed around real screenshots and real user reassurance",
+                    screensLead: "Selected file info, save location guidance, a warning panel, progress status, and language switching all appear where users actually need them.",
+                    screenMainTitle: "The main screen shows what matters immediately",
+                    screenMainBody: "You can see the selected file, output guidance, conversion warnings, and current progress in one place.",
+                    screenMainBadge: "Korean UI",
+                    screenEnTitle: "English UI is built in, not bolted on",
+                    screenEnBody: "The full interface can switch for English-speaking teammates or external partners without extra instructions.",
+                    screenConfirmTitle: "It asks one more time before starting",
+                    screenConfirmBody: "The confirmation dialog helps reduce avoidable failures by checking that PowerPoint is closed and the file is not open.",
+                    detailAsideTitle: "Why these screens feel trustworthy",
+                    detailAsideBody: "The goal is not just “it converts,” but “it helps people avoid the most common mistakes before they happen.”",
+                    detailPoint1: "Even long file names remain visible enough for users to confirm what they are working on.",
+                    detailPoint2: "The warning panel keeps PowerPoint shutdown and file lock concerns visible at all times.",
+                    detailPoint3: "Status text and the progress bar appear together so people know exactly what is happening.",
+                    detailPoint4: "Built-in Korean and English support makes it easier to use in mixed-language teams.",
+                    workflowKicker: "Workflow",
+                    workflowTitle: "A short workflow, with the right checkpoints in the right places",
+                    workflowLead: "There is no need to hunt through menus. One file selection and one confirmation step are enough to get started.",
+                    step1Title: "Select a PPT file",
+                    step1Body: "As soon as you choose a file, the app shows the target and where the new file will be saved.",
+                    step2Title: "Confirm before conversion",
+                    step2Body: "It reminds you to close PowerPoint and avoid file lock issues before running the conversion.",
+                    step3Title: "Watch progress and finish",
+                    step3Body: "You can follow the status while it runs, then open the converted PPT saved next to the original.",
+                    checkTitle: "Things to check before converting",
+                    checkLead: "Because it uses the real PowerPoint engine, preparing the environment first makes the process more reliable.",
+                    check1Title: "Close Microsoft PowerPoint",
+                    check1Body: "Closing PowerPoint fully before starting helps reduce conflicts and file lock issues.",
+                    check2Title: "Make sure the target file is not open",
+                    check2Body: "If the same PPT is already open somewhere else, saving or conversion can fail.",
+                    check3Title: "Use a copy for delivery-ready output",
+                    check3Body: "Keeping your working file separate from your delivery copy makes document management much easier.",
+                    faqTitle: "Common questions",
+                    faqLead: "These are short answers to the most practical questions people ask before trying the tool.",
+                    faq1Q: "Why is this an installable app instead of a web service?",
+                    faq1A: "It was built to process documents locally so sensitive files do not need to be uploaded anywhere.",
+                    faq2Q: "Will the result still look clean for presentation use?",
+                    faq2A: "The app exports text as high-resolution images, which keeps it visually crisp in normal presentation scenarios.",
+                    faq3Q: "Can English-speaking users work with it comfortably?",
+                    faq3A: "Yes. The interface switches fully between Korean and English, which makes it better for broader team use.",
+                    downloadKicker: "Get Started",
+                    downloadTitle: "Download it now and prepare a more reliable delivery-ready PPT",
+                    downloadLead: "If you want fewer surprises when a presentation opens on a different PC, this tool helps you create the safer copy first.",
+                    downloadPoint1: "The flow is simple enough that first-time users can get through it comfortably.",
+                    downloadPoint2: "Warnings and a confirmation dialog are built in to reduce avoidable conversion failures.",
+                    downloadPoint3: "The actual Korean and English screens support real team handoff and pre-delivery checks.",
+                    downloadBoxTitle: "Download the Windows executable",
+                    downloadBoxBody: "Run it directly on a Windows PC with Microsoft PowerPoint installed.",
+                    meta0Label: "Latest Version",
+                    meta0Value: "v1.1",
+                    meta1Label: "OS",
+                    meta1Value: "Windows 10 / 11",
+                    meta2Label: "Required",
+                    meta2Value: "Microsoft PowerPoint",
+                    meta3Label: "Processing",
+                    meta3Value: "Offline / Local",
+                    downloadBtn: "Download for free",
+                    downloadFootnote: "You can download it directly from GitHub Releases and start using it right away in a local Windows environment.",
+                    mobileDownloadBtn: "Get the Windows build",
+                    footerLeft: "© 2026 lahuman. Built for safer PPT delivery.",
+                    footerRight: "Fonts, line breaks, and final delivery should come with fewer surprises."
+                }
+            };
+
+            const menuButton = document.getElementById("menuButton");
+            const mobileNav = document.getElementById("mobileNav");
+
+            if (menuButton && mobileNav) {
+                menuButton.addEventListener("click", function () {
+                    mobileNav.classList.toggle("open");
+                });
+
+                mobileNav.querySelectorAll("a").forEach(function (link) {
+                    link.addEventListener("click", function () {
+                        mobileNav.classList.remove("open");
+                    });
+                });
+            }
+
+            function applyLanguage(lang) {
+                const dict = translations[lang] || translations.ko;
+                document.documentElement.lang = lang;
+
+                document.querySelectorAll("[data-i18n]").forEach(function (el) {
+                    const key = el.getAttribute("data-i18n");
+                    if (dict[key]) {
+                        el.textContent = dict[key];
+                    }
+                });
+
+                document.querySelectorAll("[data-i18n-html]").forEach(function (el) {
+                    const key = el.getAttribute("data-i18n-html");
+                    if (dict[key]) {
+                        el.innerHTML = dict[key];
+                    }
+                });
+
+                document.querySelectorAll(".lang-btn").forEach(function (btn) {
+                    btn.classList.toggle("active", btn.getAttribute("data-lang-switch") === lang);
+                });
+
+                try {
+                    localStorage.setItem("ppt-text2img-lang", lang);
+                } catch (error) {
+                    void error;
+                }
+            }
+
+            document.querySelectorAll("[data-lang-switch]").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    applyLanguage(btn.getAttribute("data-lang-switch"));
+                    if (mobileNav) {
+                        mobileNav.classList.remove("open");
+                    }
+                });
+            });
+
+            let initialLang = "ko";
+            try {
+                const savedLang = localStorage.getItem("ppt-text2img-lang");
+                if (savedLang && translations[savedLang]) {
+                    initialLang = savedLang;
+                } else if ((navigator.language || "").toLowerCase().startsWith("en")) {
+                    initialLang = "en";
+                }
+            } catch (error) {
+                void error;
+            }
+
+            applyLanguage(initialLang);
         })();
     </script>
 </body>
