@@ -3,7 +3,7 @@
 ; Non-commercial use only
 
 #define MyAppName "ppt-txt2img"
-#define MyAppVersion "1.0"
+#define MyAppVersion "1.1"
 #define MyAppPublisher "lahuman"
 #define MyAppURL "https://lahuman.github.io/ppt-txt2img"
 #define MyAppExeName "app.exe"
@@ -64,4 +64,3 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
-
