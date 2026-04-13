@@ -1,6 +1,8 @@
 import os
+import queue
 import tempfile
 import logging
+import threading
 from datetime import datetime
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
@@ -415,6 +417,9 @@ class App:
         self.root = root
         self.lang_code = "ko"
         self.selected_file = ""
+        self.is_converting = False
+        self.worker_thread = None
+        self.ui_event_queue = queue.Queue()
 
         self.root.geometry("640x560")
         self.root.resizable(False, False)
@@ -646,6 +651,7 @@ class App:
             )
 
     def set_busy(self, busy):
+        self.is_converting = busy
         self.btn_select.config(
             state="disabled" if busy else "normal",
             text=self.tr("btn_busy") if busy else self.tr("btn_select"),
@@ -663,6 +669,72 @@ class App:
         self.progress_bar["maximum"] = max(total, 1)
         self.progress_bar["value"] = current
         self.set_status(message, self.PRIMARY_COLOR)
+
+    def enqueue_progress(self, current, total, message):
+        self.ui_event_queue.put({
+            "type": "progress",
+            "current": current,
+            "total": total,
+            "message": message
+        })
+
+    def run_conversion_worker(self, filepath, texts):
+        try:
+            output_path, converted_count = text_to_image_ppt(
+                filepath,
+                progress_callback=self.enqueue_progress,
+                texts=texts
+            )
+            self.ui_event_queue.put({
+                "type": "done",
+                "output_path": output_path,
+                "converted_count": converted_count
+            })
+        except Exception as exc:
+            logging.exception("Conversion failed")
+            self.ui_event_queue.put({
+                "type": "error",
+                "error": str(exc)
+            })
+
+    def process_ui_events(self):
+        while True:
+            try:
+                event = self.ui_event_queue.get_nowait()
+            except queue.Empty:
+                break
+
+            event_type = event["type"]
+
+            if event_type == "progress":
+                self.update_progress(
+                    event["current"],
+                    event["total"],
+                    event["message"]
+                )
+            elif event_type == "done":
+                self.progress_bar["value"] = self.progress_bar["maximum"]
+                self.set_status(self.tr("status_done"), self.SUCCESS_COLOR)
+                self.set_busy(False)
+                messagebox.showinfo(
+                    self.tr("dialog_done_title"),
+                    self.tr(
+                        "dialog_done_msg",
+                        count=event["converted_count"],
+                        path=event["output_path"]
+                    )
+                )
+            elif event_type == "error":
+                self.progress_bar["value"] = 0
+                self.set_status(self.tr("status_error"), self.ERROR_COLOR)
+                self.set_busy(False)
+                messagebox.showerror(
+                    self.tr("dialog_error_title"),
+                    self.tr("dialog_error_msg", error=event["error"])
+                )
+
+        if self.is_converting or not self.ui_event_queue.empty():
+            self.root.after(100, self.process_ui_events)
 
     def select_file(self):
         filepath = filedialog.askopenfilename(
@@ -690,36 +762,16 @@ class App:
 
         self.set_busy(True)
         self.progress_bar["value"] = 0
+        self.progress_bar["maximum"] = 1
         self.set_status(self.tr("status_preparing"), self.PRIMARY_COLOR)
-
-        try:
-            output_path, converted_count = text_to_image_ppt(
-                filepath,
-                progress_callback=self.update_progress,
-                texts=LANG[self.lang_code]
-            )
-
-            self.set_status(self.tr("status_done"), self.SUCCESS_COLOR)
-            messagebox.showinfo(
-                self.tr("dialog_done_title"),
-                self.tr(
-                    "dialog_done_msg",
-                    count=converted_count,
-                    path=output_path
-                )
-            )
-
-        except Exception as e:
-            logging.exception("Conversion failed")
-            self.set_status(self.tr("status_error"), self.ERROR_COLOR)
-            messagebox.showerror(
-                self.tr("dialog_error_title"),
-                self.tr("dialog_error_msg", error=e)
-            )
-
-        finally:
-            self.progress_bar["value"] = 0
-            self.set_busy(False)
+        texts = LANG[self.lang_code].copy()
+        self.worker_thread = threading.Thread(
+            target=self.run_conversion_worker,
+            args=(filepath, texts),
+            daemon=True
+        )
+        self.worker_thread.start()
+        self.root.after(100, self.process_ui_events)
 
 
 if __name__ == "__main__":
