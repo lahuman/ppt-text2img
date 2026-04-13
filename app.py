@@ -57,10 +57,50 @@ LANG = {
             "3. 변환 중에는 같은 파일을 다시 열지 않겠습니다.\n\n"
             "계속하시겠습니까?"
         ),
-        "dialog_error_title": "에러",
-        "dialog_error_msg": "변환 중 오류가 발생했습니다:\n{error}",
-        "error_windows_only": "이 프로그램은 Windows에서만 실행할 수 있습니다.",
-        "error_powerpoint_required": "Microsoft PowerPoint와 pywin32가 설치된 Windows 환경이 필요합니다.\n상세 오류: {error}",
+        "dialog_error_title": "처리 중 문제가 발생했습니다",
+        "dialog_error_msg": (
+            "처리 중 예상하지 못한 문제가 발생했습니다.\n"
+            "잠시 후 다시 시도해 주세요.\n\n"
+            "상세 내용:\n{error}"
+        ),
+        "dialog_environment_title": "실행 환경 확인 필요",
+        "dialog_powerpoint_title": "Microsoft PowerPoint 필요",
+        "dialog_invalid_file_title": "파일 형식 확인 필요",
+        "dialog_file_missing_title": "파일을 찾을 수 없습니다",
+        "dialog_file_open_title": "파일을 열 수 없습니다",
+        "dialog_file_locked_title": "파일이 사용 중입니다",
+        "dialog_file_save_title": "결과 파일을 저장할 수 없습니다",
+        "dialog_file_save_locked_title": "결과 파일이 사용 중입니다",
+        "error_windows_only": "이 프로그램은 Windows에서만 실행할 수 있습니다.\nWindows PC에서 다시 실행해 주세요.",
+        "error_powerpoint_required": (
+            "이 기능을 사용하려면 Microsoft PowerPoint 정식 버전이 필요합니다.\n"
+            "PowerPoint가 설치되어 있는지 확인한 후 다시 시도해 주세요."
+        ),
+        "error_invalid_file_type": (
+            "PowerPoint 파일(.ppt 또는 .pptx)만 변환할 수 있습니다.\n"
+            "다른 형식의 파일은 지원되지 않습니다."
+        ),
+        "error_file_not_found": (
+            "선택한 파일을 찾을 수 없습니다.\n"
+            "파일이 이동되었거나 삭제되었는지 확인한 후 다시 선택해 주세요."
+        ),
+        "error_file_open_failed": (
+            "선택한 파일을 열 수 없습니다.\n"
+            "파일이 손상되었거나 PowerPoint에서 지원하지 않는 형식일 수 있습니다.\n"
+            "다른 PowerPoint 파일로 다시 시도해 주세요."
+        ),
+        "error_file_locked": (
+            "선택한 파일이 다른 프로그램에서 사용 중입니다.\n"
+            "Microsoft PowerPoint와 관련 프로그램을 모두 닫은 후 다시 시도해 주세요."
+        ),
+        "error_file_save_failed": (
+            "변환된 파일을 저장하지 못했습니다.\n"
+            "저장 폴더 권한이나 디스크 상태를 확인한 후 다시 시도해 주세요."
+        ),
+        "error_file_save_locked": (
+            "같은 이름의 결과 파일이 열려 있거나 폴더에 쓰기 권한이 없습니다.\n"
+            "열려 있는 파일을 닫고 다시 시도해 주세요."
+        ),
         "lang_ko": "한국어",
         "lang_en": "English",
     },
@@ -102,10 +142,50 @@ LANG = {
             "3. You will not reopen the file during conversion.\n\n"
             "Do you want to continue?"
         ),
-        "dialog_error_title": "Error",
-        "dialog_error_msg": "An error occurred during conversion:\n{error}",
-        "error_windows_only": "This program can only run on Windows.",
-        "error_powerpoint_required": "A Windows environment with Microsoft PowerPoint and pywin32 is required.\nDetails: {error}",
+        "dialog_error_title": "Something Went Wrong",
+        "dialog_error_msg": (
+            "An unexpected problem occurred while processing the file.\n"
+            "Please try again in a moment.\n\n"
+            "Details:\n{error}"
+        ),
+        "dialog_environment_title": "Unsupported Environment",
+        "dialog_powerpoint_title": "Microsoft PowerPoint Required",
+        "dialog_invalid_file_title": "Unsupported File Type",
+        "dialog_file_missing_title": "File Not Found",
+        "dialog_file_open_title": "Unable to Open File",
+        "dialog_file_locked_title": "File Is In Use",
+        "dialog_file_save_title": "Unable to Save the Converted File",
+        "dialog_file_save_locked_title": "Converted File Is In Use",
+        "error_windows_only": "This program can only run on Windows.\nPlease run it on a Windows PC.",
+        "error_powerpoint_required": (
+            "A full Microsoft PowerPoint installation is required to use this feature.\n"
+            "Please make sure PowerPoint is installed and try again."
+        ),
+        "error_invalid_file_type": (
+            "Only PowerPoint files (.ppt or .pptx) can be converted.\n"
+            "Other file types are not supported."
+        ),
+        "error_file_not_found": (
+            "The selected file could not be found.\n"
+            "Please check whether it was moved or deleted, then select it again."
+        ),
+        "error_file_open_failed": (
+            "The selected file could not be opened.\n"
+            "It may be damaged or not supported by PowerPoint.\n"
+            "Please try another PowerPoint file."
+        ),
+        "error_file_locked": (
+            "The selected file is currently being used by another program.\n"
+            "Please close Microsoft PowerPoint and any related apps, then try again."
+        ),
+        "error_file_save_failed": (
+            "The converted file could not be saved.\n"
+            "Please check the destination folder permissions or disk status and try again."
+        ),
+        "error_file_save_locked": (
+            "A file with the same name may already be open, or the folder may not allow writing.\n"
+            "Please close the file and try again."
+        ),
         "lang_ko": "한국어",
         "lang_en": "English",
     }
@@ -121,6 +201,96 @@ msoFalse = 0
 msoTrue = -1
 ppShapeFormatPNG = 2
 msoSendBackward = 3
+
+
+class UserVisibleError(RuntimeError):
+    def __init__(self, title, message, kind="generic"):
+        super().__init__(message)
+        self.title = title
+        self.message = message
+        self.kind = kind
+
+
+class PowerPointRequiredError(UserVisibleError):
+    def __init__(self, title, message):
+        super().__init__(title, message, kind="powerpoint_required")
+
+
+def make_powerpoint_required_error(texts):
+    return PowerPointRequiredError(
+        texts["dialog_powerpoint_title"],
+        texts["error_powerpoint_required"]
+    )
+
+
+def looks_like_lock_error(message):
+    lowered = message.lower()
+    keywords = (
+        "permission denied",
+        "access denied",
+        "sharing violation",
+        "in use",
+        "used by another process",
+        "read-only",
+        "locked",
+        "사용 중",
+        "권한",
+        "잠금",
+    )
+    return any(keyword in lowered for keyword in keywords)
+
+
+def looks_like_missing_file_error(message):
+    lowered = message.lower()
+    keywords = (
+        "not found",
+        "cannot find",
+        "could not find",
+        "파일을 찾을 수",
+        "찾을 수 없습니다",
+    )
+    return any(keyword in lowered for keyword in keywords)
+
+
+def classify_open_error(exc, texts):
+    message = str(exc)
+
+    if looks_like_missing_file_error(message):
+        return UserVisibleError(
+            texts["dialog_file_missing_title"],
+            texts["error_file_not_found"],
+            kind="file_open"
+        )
+
+    if looks_like_lock_error(message):
+        return UserVisibleError(
+            texts["dialog_file_locked_title"],
+            texts["error_file_locked"],
+            kind="file_open"
+        )
+
+    return UserVisibleError(
+        texts["dialog_file_open_title"],
+        texts["error_file_open_failed"],
+        kind="file_open"
+    )
+
+
+def classify_save_error(exc, texts):
+    message = str(exc)
+
+    if looks_like_lock_error(message):
+        return UserVisibleError(
+            texts["dialog_file_save_locked_title"],
+            texts["error_file_save_locked"],
+            kind="file_save"
+        )
+
+    return UserVisibleError(
+        texts["dialog_file_save_title"],
+        texts["error_file_save_failed"],
+        kind="file_save"
+    )
 
 
 def has_visible_text(shape):
@@ -175,12 +345,15 @@ def crop_transparent_area(png_path, slide_width_pt, slide_height_pt):
 
 def ensure_runtime_requirements(texts):
     if os.name != "nt":
-        raise RuntimeError(texts["error_windows_only"])
+        raise UserVisibleError(
+            texts["dialog_environment_title"],
+            texts["error_windows_only"],
+            kind="environment"
+        )
 
     if pythoncom is None or win32com is None:
-        raise RuntimeError(
-            texts["error_powerpoint_required"].format(error=COM_IMPORT_ERROR)
-        )
+        logging.warning("PowerPoint runtime requirements missing: %s", COM_IMPORT_ERROR)
+        raise make_powerpoint_required_error(texts)
 
 
 def shape_to_cropped_picture(slide, shape, slide_width_pt, slide_height_pt, temp_png_path):
@@ -285,7 +458,23 @@ def shape_to_cropped_picture(slide, shape, slide_width_pt, slide_height_pt, temp
 
 def text_to_image_ppt(input_ppt, progress_callback=None, texts=None):
     texts = texts or LANG["ko"]
+    base_name, ext = os.path.splitext(input_ppt)
+    if ext.lower() not in (".ppt", ".pptx"):
+        raise UserVisibleError(
+            texts["dialog_invalid_file_title"],
+            texts["error_invalid_file_type"],
+            kind="invalid_file"
+        )
+
     ensure_runtime_requirements(texts)
+
+    abs_input_path = os.path.abspath(input_ppt)
+    if not os.path.exists(abs_input_path):
+        raise UserVisibleError(
+            texts["dialog_file_missing_title"],
+            texts["error_file_not_found"],
+            kind="file_open"
+        )
 
     pythoncom.CoInitialize()
 
@@ -293,20 +482,26 @@ def text_to_image_ppt(input_ppt, progress_callback=None, texts=None):
     presentation = None
     temp_png_path = None
 
-    base_name, ext = os.path.splitext(input_ppt)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_ppt = "%s_converted_%s%s" % (base_name, timestamp, ext)
-    abs_input_path = os.path.abspath(input_ppt)
     abs_output_path = os.path.abspath(output_ppt)
 
     try:
         temp_fd, temp_png_path = tempfile.mkstemp(prefix="ppt_text_", suffix=".png")
         os.close(temp_fd)
 
-        powerpoint = win32com.client.Dispatch("PowerPoint.Application")
+        try:
+            powerpoint = win32com.client.Dispatch("PowerPoint.Application")
+        except Exception as exc:
+            logging.warning("PowerPoint launch failed: %s", exc)
+            raise make_powerpoint_required_error(texts)
         powerpoint.DisplayAlerts = 0
 
-        presentation = powerpoint.Presentations.Open(abs_input_path, WithWindow=False)
+        try:
+            presentation = powerpoint.Presentations.Open(abs_input_path, WithWindow=False)
+        except Exception as exc:
+            logging.warning("Presentation open failed: %s", exc)
+            raise classify_open_error(exc, texts)
 
         total_slides = presentation.Slides.Count
         slide_width_pt = presentation.PageSetup.SlideWidth
@@ -367,7 +562,11 @@ def text_to_image_ppt(input_ppt, progress_callback=None, texts=None):
                     )
                 )
 
-        presentation.SaveAs(abs_output_path)
+        try:
+            presentation.SaveAs(abs_output_path)
+        except Exception as exc:
+            logging.warning("Presentation save failed: %s", exc)
+            raise classify_save_error(exc, texts)
 
         if progress_callback:
             progress_callback(
@@ -717,10 +916,19 @@ class App:
                 "output_path": output_path,
                 "converted_count": converted_count
             })
+        except UserVisibleError as exc:
+            logging.warning("User visible error [%s]: %s", exc.kind, exc.message)
+            self.ui_event_queue.put({
+                "type": "error",
+                "kind": exc.kind,
+                "title": exc.title,
+                "error": exc.message
+            })
         except Exception as exc:
             logging.exception("Conversion failed")
             self.ui_event_queue.put({
                 "type": "error",
+                "kind": "generic",
                 "error": str(exc)
             })
 
@@ -755,10 +963,16 @@ class App:
                 self.progress_bar["value"] = 0
                 self.set_status(self.tr("status_error"), self.ERROR_COLOR)
                 self.set_busy(False)
-                messagebox.showerror(
-                    self.tr("dialog_error_title"),
-                    self.tr("dialog_error_msg", error=event["error"])
-                )
+                if event.get("title"):
+                    messagebox.showerror(
+                        event["title"],
+                        event["error"]
+                    )
+                else:
+                    messagebox.showerror(
+                        self.tr("dialog_error_title"),
+                        self.tr("dialog_error_msg", error=event["error"])
+                    )
 
         if self.is_converting or not self.ui_event_queue.empty():
             self.root.after(100, self.process_ui_events)
