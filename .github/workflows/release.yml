@@ -1,0 +1,95 @@
+name: Windows release
+
+on:
+  push:
+    tags:
+      - '[0-9]*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: windows-2025
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+          architecture: x64
+      - name: Install build dependencies
+        run: |
+          python -m venv venv
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & venv/Scripts/python.exe -m pip install -r requirements-dev.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify tag and test
+        env:
+          RUN_UI_TESTS: '1'
+        run: |
+          $version = & venv/Scripts/python.exe -c 'import app; print(app.APP_VERSION)'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ($version -ne $env:GITHUB_REF_NAME) { throw 'Tag must match APP_VERSION.' }
+          & venv/Scripts/python.exe -m unittest discover -s tests -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node --check docs/site.js
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build installer and portable executable
+        run: |
+          & scripts/build-release.ps1 -Installer -InnoCompiler 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+      - name: Verify installer contents and executable startup
+        run: |
+          $releaseDirectory = Join-Path $PWD "build/release-v$env:GITHUB_REF_NAME"
+          $installDirectory = Join-Path $env:RUNNER_TEMP 'ppt-text2img-install-check'
+          $installer = Join-Path $releaseDirectory 'ppt-txt2img.exe'
+          $setup = Start-Process -FilePath $installer -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/NOICONS', '/TASKS=""', "/DIR=`"$installDirectory`"") -WindowStyle Hidden -Wait -PassThru
+          if ($setup.ExitCode -ne 0) { throw "Installer failed: $($setup.ExitCode)" }
+          $installedApp = Join-Path $installDirectory 'app.exe'
+          $portable = Join-Path $releaseDirectory 'ppt-txt2img-portable.exe'
+          if ((Get-FileHash $installedApp).Hash -ne (Get-FileHash $portable).Hash) { throw 'Installed executable does not match portable executable.' }
+          $application = Start-Process -FilePath $installedApp -WindowStyle Hidden -PassThru
+          try {
+            Start-Sleep -Seconds 8
+            if ($application.HasExited) { throw "Application exited during startup: $($application.ExitCode)" }
+          } finally {
+            if (-not $application.HasExited) { Stop-Process -InputObject $application }
+          }
+      - name: Create release with verified assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          $releaseDirectory = Join-Path $PWD "build/release-v$tag"
+          $notes = Get-Content RELEASE_NOTES.md -Raw
+          $section = [regex]::Match($notes, "(?ms)^## v$([regex]::Escape($tag))[^\r\n]*\r?\n(.*?)(?=^## |\z)")
+          if (-not $section.Success) { throw 'Release notes not found.' }
+          $body = ($section.Groups[1].Value -replace '(?m)^배포 상태:.*\r?\n', '').Trim()
+          $body += "`n`n## 실행 조건 및 다운로드`n`n- Windows 10 / 11 x64, Microsoft PowerPoint 및 원본 글꼴이 필요합니다.`n- ppt-txt2img.exe: 설치 프로그램`n- ppt-txt2img-portable.exe: 설치 없는 실행 파일 (PowerPoint 필요)`n- SHA256SUMS.txt: 다운로드 파일 검증용 SHA-256 체크섬`n- 텍스트가 이미지로 바뀌어 직접 편집할 수 없습니다. 원본을 보관하세요.`n- 표·차트·SmartArt는 변환하지 않으며 그룹 구조는 보존하지 않습니다.`n`n검증: 로컬 PowerPoint 2010 통합 테스트 포함 16개 통과. CI에서는 PowerPoint 통합 테스트를 제외하고 테스트·빌드·설치 파일 일치 및 실행 시작을 확인했습니다. 최신 PowerPoint 환경은 별도 확인이 필요합니다."
+          $notesFile = Join-Path $releaseDirectory 'release-notes.md'
+          Set-Content -LiteralPath $notesFile -Value $body -Encoding utf8
+          $assets = @('ppt-txt2img.exe', 'ppt-txt2img-portable.exe', 'SHA256SUMS.txt') | ForEach-Object { Join-Path $releaseDirectory $_ }
+          foreach ($asset in $assets) { if (-not (Test-Path -LiteralPath $asset)) { throw "Missing release asset: $asset" } }
+          gh release create $tag @assets --verify-tag --draft --title "v$tag — UI 개선 및 변환 안정성 강화" --notes-file $notesFile
+          if ($LASTEXITCODE -ne 0) { throw 'Release draft creation failed; inspect existing drafts before retrying.' }
+          $remote = gh release view $tag --json assets | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to verify release draft.' }
+          foreach ($asset in $assets) {
+            $file = Get-Item -LiteralPath $asset
+            $uploaded = @($remote.assets | Where-Object name -EQ $file.Name)
+            if ($uploaded.Count -ne 1 -or $uploaded[0].size -ne $file.Length) { throw "Release asset mismatch: $($file.Name)" }
+          }
+          gh release edit $tag --draft=false --latest
+          if ($LASTEXITCODE -ne 0) { throw 'Release publication failed.' }
