@@ -54,9 +54,9 @@ def configure_logging(directory=None):
     try:
         directory = Path(directory or Path(os.environ.get("LOCALAPPDATA", tempfile.gettempdir())) / "PPT-Pixel" / "logs")
         directory.mkdir(parents=True, exist_ok=True)
-        path = directory / "app.log"
+        path = (directory / "app.log").resolve()
         root = logging.getLogger()
-        if not any(isinstance(h, RotatingFileHandler) and h.baseFilename == str(path.resolve()) for h in root.handlers):
+        if not any(isinstance(h, RotatingFileHandler) and h.baseFilename == str(path) for h in root.handlers):
             handler = RotatingFileHandler(path, maxBytes=1024 * 1024, backupCount=3, encoding="utf-8")
             handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
             root.addHandler(handler)
