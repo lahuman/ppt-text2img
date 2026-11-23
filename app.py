@@ -67,6 +67,8 @@ class App:
         self.lang_code = "ko"
         self.selected_file = ""
         self.is_converting = False
+        self.result_event = None
+        self.saving = False
         self.worker_thread = None
         self.cancel_event = threading.Event()
         self.started_at = None
@@ -200,9 +202,13 @@ class App:
                                             mode="determinate", style="App.Horizontal.TProgressbar")
         self.progress_bar.pack(fill="x", pady=(10, 8))
         self.lbl_status = tk.Label(self.progress_panel.body, bg=self.CARD_COLOR, fg=self.MUTED_COLOR,
-                                  font=("Malgun Gothic", 9), anchor="w", justify="left", wraplength=550)
+                                  font=("Malgun Gothic", 12, "bold"), anchor="w", justify="left", wraplength=550)
         self.lbl_status.pack(fill="x")
 
+        self.result_actions = tk.Frame(self.progress_panel.body, bg=self.CARD_COLOR)
+        self.result_actions.pack(fill="x")
+        self.btn_output = ttk.Button(self.result_actions, style="Primary.TButton")
+        self.btn_report = ttk.Button(self.result_actions, style="Secondary.TButton")
         self.warning_frame = tk.Frame(self.container, bg=self.BG_COLOR)
         self.warning_frame.pack(fill="x", pady=(16, 16))
         tk.Label(self.warning_frame, text="i", bg=self.BG_COLOR, fg=self.MUTED_COLOR,
@@ -281,6 +287,8 @@ class App:
         if self.status_key in ("status_ready", "ready_hint", "selected_hint"):
             self.status_key = "selected_hint" if self.selected_file else "ready_hint"
         self.lbl_status.config(text=self.tr(self.status_key))
+        if self.result_event:
+            self.show_result(self.result_event)
         self.fit_window_height()
 
     def change_language(self, event=None):
@@ -317,7 +325,18 @@ class App:
         self.btn_convert.config(state="disabled" if busy or not self.selected_file else "normal",
                                 text=self.tr("btn_busy" if busy else "btn_convert"))
         self.cmb_lang.config(state="disabled" if busy else "readonly")
-        self.root.config(cursor="watch" if busy else "")
+        if busy:
+            self.file_panel.pack_forget()
+            self.btn_convert.pack_forget()
+            self.lbl_progress_title.config(text=self.format_display_path(os.path.basename(self.selected_file), 52))
+            self.lbl_warning_body.config(text=self.tr("minimize_hint"))
+        else:
+            self.progress_bar.stop()
+            self.progress_bar.configure(mode="determinate")
+            self.file_panel.pack(before=self.progress_panel, fill="x")
+            self.btn_convert.pack(before=self.btn_cancel, fill="x")
+            self.lbl_progress_title.config(text=self.tr("progress_title"))
+            self.lbl_warning_body.config(text=self.tr("compact_warning"))
         self.root.update_idletasks()
 
     def set_status(self, text, color=None):
@@ -325,9 +344,12 @@ class App:
         self.root.update_idletasks()
 
     def update_progress(self, current, total, message):
+        if str(self.progress_bar["mode"]) == "indeterminate":
+            self.progress_bar.stop()
+            self.progress_bar.configure(mode="determinate")
         self.progress_bar["maximum"] = max(total, 1)
         self.progress_bar["value"] = current
-        self.lbl_percent.config(text=f"{min(100, round(current / max(total, 1) * 100))}%")
+        self.lbl_percent.config(text=f"{min(99 if self.is_converting else 100, round(current / max(total, 1) * 100))}%")
         self.set_status(message, self.PRIMARY_COLOR)
 
     def enqueue_progress(self, current, total, message):
@@ -343,6 +365,7 @@ class App:
             result = text_to_image_ppt(
                 filepath,
                 progress_callback=self.enqueue_progress,
+                saving_callback=lambda: self.ui_event_queue.put({"type": "saving"}),
                 texts=texts,
                 cancel_event=self.cancel_event
             )
@@ -381,42 +404,23 @@ class App:
 
             event_type = event["type"]
 
-            if event_type == "progress":
+            if event_type == "saving":
+                self.saving = True
+                self.btn_cancel.config(state="disabled")
+                self.show_activity("status_saving")
+            elif event_type == "progress":
+                if self.saving or self.cancel_event.is_set():
+                    continue
                 self.update_progress(
                     event["current"],
                     event["total"],
                     event["message"]
                 )
             elif event_type == "done":
-                self.progress_bar["value"] = self.progress_bar["maximum"]
-                self.lbl_percent.config(text="100%")
                 self.set_busy(False)
-                if event["state"] == "recovery_required":
-                    self.status_key = "status_recovery_required"
-                    self.set_status(self.tr(self.status_key), self.WARNING_TEXT)
-                    messagebox.showwarning(self.tr("dialog_recovery_title"),
-                                           self.tr("dialog_recovery_msg", path=event["output_path"]))
-                    continue
-                if event["state"] == "partial":
-                    self.status_key = "status_partial"
-                    self.set_status(self.tr("status_partial"), self.WARNING_TEXT)
-                    messagebox.showwarning(
-                        self.tr("dialog_partial_title"),
-                        self.tr("dialog_partial_msg", count=event["converted_count"],
-                                failed=len(event["issues"]), path=event["output_path"],
-                                report=event["report_path"] or str(event["issues"]))
-                    )
-                    continue
-                self.status_key = "status_done"
-                self.set_status(self.tr("status_done"), self.SUCCESS_COLOR)
-                messagebox.showinfo(
-                    self.tr("dialog_done_title"),
-                    self.tr(
-                        "dialog_done_msg",
-                        count=event["converted_count"],
-                        path=event["output_path"]
-                    )
-                )
+                self.progress_bar["value"] = self.progress_bar["maximum"]
+                self.lbl_percent.config(text="100%" if event["state"] != "recovery_required" else "")
+                self.show_result(event)
             elif event_type == "cancelled":
                 self.set_busy(False)
                 self.progress_bar["value"] = 0
@@ -445,6 +449,52 @@ class App:
         if self.is_converting or not self.ui_event_queue.empty():
             self.root.after(100, self.process_ui_events)
 
+    def show_activity(self, key):
+        self.progress_bar.configure(mode="indeterminate")
+        self.progress_bar.start(20)
+        self.lbl_percent.config(text="")
+        self.set_status(self.tr(key), self.PRIMARY_COLOR)
+
+    def open_path(self, path):
+        try:
+            os.startfile(path)
+        except OSError:
+            messagebox.showerror(self.tr("dialog_error_title"), self.tr("open_failed", path=path))
+
+    def clear_result(self):
+        self.result_event = None
+        self.btn_output.pack_forget()
+        self.btn_report.pack_forget()
+        self.lbl_elapsed.config(text="")
+
+    def show_result(self, event):
+        self.result_event = event
+        path = event["output_path"]
+        state = event["state"]
+        recovery = state == "recovery_required"
+        self.status_key = {"complete": "status_done", "partial": "status_partial",
+                           "recovery_required": "status_recovery_required"}[state]
+        if recovery:
+            message = self.tr("dialog_recovery_msg", path=path)
+        elif state == "partial":
+            message = self.tr("dialog_partial_msg", count=event["converted_count"], failed=len(event["issues"]),
+                              path=path, report=event["report_path"] or str(event["issues"]))
+        else:
+            message = self.tr("dialog_done_msg", count=event["converted_count"], path=path)
+        self.set_status(message, self.SUCCESS_COLOR if state == "complete" else self.WARNING_TEXT)
+        target = os.path.dirname(path) if recovery else path
+        self.btn_output.config(text=self.tr("open_recovery" if recovery else "open_result"),
+                               command=lambda: self.open_path(target))
+        self.btn_output.pack(side="left", pady=(10, 0))
+        if state == "partial" and event["report_path"]:
+            self.btn_report.config(text=self.tr("open_report"), command=lambda: self.open_path(event["report_path"]))
+            self.btn_report.pack(side="left", padx=8, pady=(10, 0))
+            self.btn_report.pack_configure(before=self.btn_output)
+            self.btn_report.configure(style="Primary.TButton")
+            self.btn_output.configure(style="Secondary.TButton")
+        else:
+            self.btn_output.configure(style="Primary.TButton")
+
     def select_file(self):
         if self.is_converting:
             return
@@ -456,6 +506,7 @@ class App:
         if not filepath:
             return
 
+        self.clear_result()
         self.selected_file = filepath
         self.update_selected_file_label()
         self.status_key = "selected_hint"
@@ -485,6 +536,8 @@ class App:
             self.set_status(self.tr("selected_hint"))
             return
 
+        self.clear_result()
+        self.saving = False
         self.cancel_event.clear()
         self.started_at = time.monotonic()
         self.lbl_elapsed.config(text="")
@@ -493,7 +546,7 @@ class App:
         self.progress_bar["maximum"] = 1
         self.lbl_percent.config(text="0%")
         self.status_key = "status_preparing"
-        self.set_status(self.tr("status_preparing"), self.PRIMARY_COLOR)
+        self.show_activity("opening")
         texts = LANG[self.lang_code].copy()
         self.worker_thread = threading.Thread(
             target=self.run_conversion_worker,

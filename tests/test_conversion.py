@@ -106,7 +106,7 @@ class ConversionTests(unittest.TestCase):
 
     @patch("app.messagebox.showinfo")
     @patch("app.messagebox.showwarning")
-    def test_partial_conversion_shows_warning_instead_of_success(self, warning, info):
+    def test_partial_conversion_prioritizes_report_action(self, warning, info):
         ui = app.App.__new__(app.App)
         ui.lang_code = "ko"
         ui.is_converting = False
@@ -118,8 +118,15 @@ class ConversionTests(unittest.TestCase):
                                "report_path": "out.pptx.report.json"})
         ui.set_status = Mock()
         ui.set_busy = Mock()
+        ui.btn_output = Mock()
+        ui.btn_report = Mock()
         ui.process_ui_events()
-        warning.assert_called_once()
+        self.assertEqual(ui.status_key, "status_partial")
+        ui.btn_report.pack_configure.assert_called_once_with(before=ui.btn_output)
+        ui.open_path = Mock()
+        ui.btn_report.config.call_args.kwargs["command"]()
+        ui.open_path.assert_called_once_with("out.pptx.report.json")
+        warning.assert_not_called()
         info.assert_not_called()
 
     @patch("app.messagebox.showwarning")
@@ -132,13 +139,18 @@ class ConversionTests(unittest.TestCase):
         ui.ui_event_queue = queue.Queue()
         ui.set_status = Mock()
         ui.set_busy = Mock()
+        ui.btn_output = Mock()
+        ui.btn_report = Mock()
         ui.cancel_event = None
-        result = app.ConversionResult("pending.pptx", state="recovery_required")
+        result = app.ConversionResult("folder/pending.pptx", state="recovery_required")
         with patch("app.text_to_image_ppt", return_value=result):
             ui.run_conversion_worker("source.pptx", {})
         ui.process_ui_events()
         self.assertEqual(ui.status_key, "status_recovery_required")
-        self.assertIn(result.output_path, warning.call_args.args[1])
+        self.assertIn(result.output_path, ui.set_status.call_args.args[0])
+        ui.open_path = Mock()
+        ui.btn_output.config.call_args.kwargs["command"]()
+        ui.open_path.assert_called_once_with("folder")
 
     @patch("app.filedialog.askopenfilename", return_value="C:/slides/talk.pptx")
     @patch("app.messagebox.askokcancel")
@@ -146,6 +158,7 @@ class ConversionTests(unittest.TestCase):
         ui = app.App.__new__(app.App)
         ui.lang_code = "ko"
         ui.is_converting = False
+        ui.clear_result = Mock()
         ui.update_selected_file_label = Mock()
         ui.update_progress = Mock()
         ui.select_file()

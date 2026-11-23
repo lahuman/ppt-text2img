@@ -307,12 +307,12 @@ def check_cancelled(cancel_event):
         raise ConversionCancelled()
 
 
-def text_to_image_ppt(input_ppt, progress_callback=None, texts=None, cancel_event=None):
+def text_to_image_ppt(input_ppt, progress_callback=None, texts=None, cancel_event=None, saving_callback=None):
     texts = texts or LANG["ko"]
     check_cancelled(cancel_event)
     try:
         with conversion_slot():
-            return _convert_presentation(input_ppt, progress_callback, texts, cancel_event)
+            return _convert_presentation(input_ppt, progress_callback, texts, cancel_event, saving_callback)
     except ConversionBusyError as exc:
         raise UserVisibleError(texts["dialog_error_title"], texts["error_busy"], kind="busy") from exc
 
@@ -330,7 +330,7 @@ def suppress_alerts(powerpoint, cleanup_issues):
             cleanup_issues.append({"stage": "restore_alerts", "error": str(exc)})
 
 
-def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_event=None):
+def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_event=None, saving_callback=None):
     texts = texts or LANG["ko"]
     base_name, ext = os.path.splitext(input_ppt)
     if ext.lower() not in (".ppt", ".pptx"):
@@ -433,8 +433,15 @@ def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_
             ungroup_all_shapes(slide, result.issues, slide_index, cancel_event)
 
             shapes = [slide.Shapes(i) for i in range(1, slide.Shapes.Count + 1)]
+            next_update = 0.0
             for i, shape in enumerate(shapes, start=1):
                 check_cancelled(cancel_event)
+                now = time.monotonic()
+                if progress_callback and (now >= next_update or i == len(shapes)):
+                    progress_callback(slide_index - 1 + (i - 1) / len(shapes), total_slides,
+                                      texts["shape_progress"].format(current=slide_index, total=total_slides,
+                                                                     shape=i, count=len(shapes)))
+                    next_update = now + 0.35
                 try:
                     if shape.Type == MsoShapeTypeGroup:
                         continue
@@ -484,6 +491,8 @@ def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_
                 )
 
         check_cancelled(cancel_event)
+        if saving_callback:
+            saving_callback()
         if progress_callback:
             progress_callback(total_slides, total_slides, texts["status_saving"])
         save_started = time.perf_counter()

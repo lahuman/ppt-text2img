@@ -1,5 +1,9 @@
 """Opt-in tests for the real Tk layout and interaction states."""
 import os
+import tempfile
+import time
+from pathlib import Path
+from unittest.mock import patch
 import tkinter as tk
 import unittest
 
@@ -64,6 +68,68 @@ class InterfaceTests(unittest.TestCase):
         self.ui.process_ui_events()
         self.assertFalse(self.ui.is_converting)
         self.assertEqual(self.ui.status_key, "status_cancelled")
+
+    @unittest.skipUnless(os.environ.get("RUN_POWERPOINT_TESTS") == "1", "Requires installed PowerPoint")
+    def test_dense_slide_progress_continues_while_minimized(self):
+        # Collect destroyed Tk windows on their owning thread before starting the worker.
+        import gc
+        gc.collect()
+        import pythoncom
+        import win32com.client
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "dense.pptx"
+            pythoncom.CoInitialize()
+            try:
+                ppt = win32com.client.DispatchEx("PowerPoint.Application")
+                try:
+                    doc = ppt.Presentations.Add(False)
+                    try:
+                        slide = doc.Slides.Add(1, 12)
+                        for i in range(60):
+                            shape = slide.Shapes.AddTextbox(1, (i % 8) * 75, (i // 8) * 45, 72, 40)
+                            shape.TextFrame.TextRange.Text = f"항목 {i + 1}"
+                        doc.SaveAs(str(path), 24)
+                    finally:
+                        doc.Close()
+                finally:
+                    ppt.Quit()
+            finally:
+                pythoncom.CoUninitialize()
+            self.ui.selected_file = str(path)
+            self.ui.update_selected_file_label()
+            samples = []
+            original = self.ui.set_status
+            def observe(message, color=None):
+                original(message, color)
+                samples.append((time.monotonic(), self.ui.lbl_status.cget("text")))
+            with patch.object(self.ui, "set_status", side_effect=observe), patch("app.messagebox.askokcancel", return_value=True):
+                self.ui.start_conversion()
+                self.assertEqual(self.ui.lbl_status.cget("text"), self.ui.tr("opening"))
+                self.assertEqual(self.ui.lbl_warning_body.cget("text"), self.ui.tr("minimize_hint"))
+                deadline = time.monotonic() + 120
+                minimized = False
+                while self.ui.is_converting and time.monotonic() < deadline:
+                    self.root.update()
+                    if not minimized and "도형" in self.ui.lbl_status.cget("text"):
+                        self.root.iconify()
+                        minimized = True
+                    time.sleep(0.02)
+                self.assertTrue(minimized)
+                self.assertEqual(self.root.state(), "iconic")
+                self.root.deiconify()
+                self.root.update()
+            shapes = [(ts, msg) for ts, msg in samples if "도형" in msg and "/60" in msg]
+            self.assertGreater(len(shapes), 2)
+            self.assertLess(shapes[0][0], shapes[-1][0])
+            self.assertIn(self.ui.tr("status_saving"), [msg for _, msg in samples])
+            self.assertEqual(self.ui.result_event["state"], "complete")
+            self.assertEqual(self.ui.result_event["converted_count"], 60)
+            output = self.ui.result_event["output_path"]
+            self.assertTrue(Path(output).is_file())
+            with patch("app.os.startfile") as launch:
+                self.ui.btn_output.invoke()
+                launch.assert_called_once_with(output)
+            print(f"Dense slide: {len(shapes)} shape updates over {shapes[-1][0]-shapes[0][0]:.1f}s")
 
 
 if __name__ == "__main__":
