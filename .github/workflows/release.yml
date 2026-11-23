@@ -72,7 +72,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          TAG_UPDATED: ${{ github.event.forced }}
         run: |
           $tag = $env:GITHUB_REF_NAME
           $releaseDirectory = Join-Path $PWD "build/release-v$tag"
@@ -85,7 +84,9 @@ jobs:
           Set-Content -LiteralPath $notesFile -Value $body -Encoding utf8
           $assets = @("ppt-txt2img_v$env:GITHUB_REF_NAME.exe", "ppt-txt2img-portable_v$env:GITHUB_REF_NAME.exe", 'SHA256SUMS.txt') | ForEach-Object { Join-Path $releaseDirectory $_ }
           foreach ($asset in $assets) { if (-not (Test-Path -LiteralPath $asset)) { throw "Missing release asset: $asset" } }
-          if ($env:TAG_UPDATED -eq 'true') {
+          $existingTags = gh api --paginate "repos/$env:GH_REPO/releases?per_page=100" --jq '.[].tag_name'
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to look up existing releases.' }
+          if ($tag -cin @($existingTags)) {
             gh release upload $tag @assets --clobber
             if ($LASTEXITCODE -ne 0) { throw 'Release asset replacement failed.' }
           } else {
