@@ -55,11 +55,11 @@ jobs:
         run: |
           $releaseDirectory = Join-Path $PWD "build/release-v$env:GITHUB_REF_NAME"
           $installDirectory = Join-Path $env:RUNNER_TEMP 'ppt-text2img-install-check'
-          $installer = Join-Path $releaseDirectory 'ppt-txt2img.exe'
+          $installer = Join-Path $releaseDirectory "ppt-txt2img_v$env:GITHUB_REF_NAME.exe"
           $setup = Start-Process -FilePath $installer -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/NOICONS', '/TASKS=""', "/DIR=`"$installDirectory`"") -WindowStyle Hidden -Wait -PassThru
           if ($setup.ExitCode -ne 0) { throw "Installer failed: $($setup.ExitCode)" }
           $installedApp = Join-Path $installDirectory 'app.exe'
-          $portable = Join-Path $releaseDirectory 'ppt-txt2img-portable.exe'
+          $portable = Join-Path $releaseDirectory "ppt-txt2img-portable_v$env:GITHUB_REF_NAME.exe"
           if ((Get-FileHash $installedApp).Hash -ne (Get-FileHash $portable).Hash) { throw 'Installed executable does not match portable executable.' }
           $application = Start-Process -FilePath $installedApp -WindowStyle Hidden -PassThru
           try {
@@ -80,10 +80,10 @@ jobs:
           $section = [regex]::Match($notes, "(?ms)^## v$([regex]::Escape($tag))[^\r\n]*\r?\n(.*?)(?=^## |\z)")
           if (-not $section.Success) { throw 'Release notes not found.' }
           $body = ($section.Groups[1].Value -replace '(?m)^배포 상태:.*\r?\n', '').Trim()
-          $body += "`n`n## 실행 조건 및 다운로드`n`n- Windows 10 / 11 x64, Microsoft PowerPoint 및 원본 글꼴이 필요합니다.`n- ppt-txt2img.exe: 설치 프로그램`n- ppt-txt2img-portable.exe: 설치 없는 실행 파일 (PowerPoint 필요)`n- SHA256SUMS.txt: 다운로드 파일 검증용 SHA-256 체크섬`n- 텍스트가 이미지로 바뀌어 직접 편집할 수 없습니다. 원본을 보관하세요.`n- 표·차트·SmartArt는 확인이 필요합니다. 변환할 텍스트가 있는 그룹만 해제합니다.`n`n검증: 이 태그의 CI에서는 PowerPoint 통합 테스트를 제외하고 테스트·빌드·설치 파일 일치 및 실행 시작을 확인했습니다. 최신 PowerPoint 환경은 별도 확인이 필요합니다."
+          $body += "`n`n## 실행 조건 및 다운로드`n`n- Windows 10 / 11 x64, Microsoft PowerPoint 및 원본 글꼴이 필요합니다.`n- ppt-txt2img_v${tag}.exe: 설치 프로그램`n- ppt-txt2img-portable_v${tag}.exe: 설치 없는 실행 파일 (PowerPoint 필요)`n- SHA256SUMS.txt: 다운로드 파일 검증용 SHA-256 체크섬`n- 텍스트가 이미지로 바뀌어 직접 편집할 수 없습니다. 원본을 보관하세요.`n- 표·차트·SmartArt는 확인이 필요합니다. 변환할 텍스트가 있는 그룹만 해제합니다.`n`n검증: 이 태그의 CI에서는 PowerPoint 통합 테스트를 제외하고 테스트·빌드·설치 파일 일치 및 실행 시작을 확인했습니다. 최신 PowerPoint 환경은 별도 확인이 필요합니다."
           $notesFile = Join-Path $releaseDirectory 'release-notes.md'
           Set-Content -LiteralPath $notesFile -Value $body -Encoding utf8
-          $assets = @('ppt-txt2img.exe', 'ppt-txt2img-portable.exe', 'SHA256SUMS.txt') | ForEach-Object { Join-Path $releaseDirectory $_ }
+          $assets = @("ppt-txt2img_v$env:GITHUB_REF_NAME.exe", "ppt-txt2img-portable_v$env:GITHUB_REF_NAME.exe", 'SHA256SUMS.txt') | ForEach-Object { Join-Path $releaseDirectory $_ }
           foreach ($asset in $assets) { if (-not (Test-Path -LiteralPath $asset)) { throw "Missing release asset: $asset" } }
           if ($env:TAG_UPDATED -eq 'true') {
             gh release upload $tag @assets --clobber

@@ -132,7 +132,6 @@ class ConversionResult:
     output_path: str
     converted_count: int = 0
     issues: list = field(default_factory=list)
-    report_path: str = ""
     metrics: dict = field(default_factory=dict)
     state: str = "complete"
 
@@ -622,7 +621,6 @@ def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_
     result.issues.extend(cleanup_issues)
     publish_output(result, staged_path, texts, job_id)
     result.metrics["elapsed_seconds"] = round(time.perf_counter() - started, 4)
-    write_report(result, job_id)
     if result.issues and result.state == "complete":
         result.state = "partial"
     logging.info("Job %s finished state=%s converted=%s issues=%s elapsed=%.3fs",
@@ -651,29 +649,6 @@ def publish_output(result, staged_path, texts, job_id):
                                    texts["error_file_save_failed"] + "\n" + staged_path,
                                    kind="file_save") from exc
         result.state = "partial" if result.issues else "complete"
-
-
-def write_report(result, job_id):
-    result.report_path = result.output_path + ".report.json"
-    report_temp = None
-    try:
-        report_fd, report_temp = tempfile.mkstemp(prefix=".ppt-pixel-report-", suffix=".json",
-                                                dir=os.path.dirname(result.output_path))
-        with os.fdopen(report_fd, "w", encoding="utf-8") as report:
-            json.dump({"schema_version": 1, "job_id": job_id, "state": result.state,
-                       "metrics": result.metrics, "converted_count": result.converted_count,
-                       "issues": result.issues}, report, ensure_ascii=False, indent=2)
-        os.replace(report_temp, result.report_path)
-    except OSError as exc:
-        result.report_path = ""
-        result.issues.append({"stage": "report", "error": str(exc)})
-        logging.warning("Job %s report failed (%s)", job_id, type(exc).__name__)
-    finally:
-        if report_temp and os.path.exists(report_temp):
-            try:
-                os.remove(report_temp)
-            except OSError as exc:
-                result.issues.append({"stage": "report_cleanup", "error": str(exc)})
 
 
 def validate_output(path, extension):

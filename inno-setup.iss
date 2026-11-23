@@ -3,7 +3,7 @@
 ; Non-commercial use only
 
 #define MyAppName "ppt-txt2img"
-#define MyAppVersion "1.3.1"
+#define MyAppVersion "1.4"
 #define MyAppPublisher "lahuman"
 #define MyAppURL "https://lahuman.github.io/ppt-text2img"
 #define MyAppExeName "app.exe"
@@ -36,7 +36,7 @@ DisableProgramGroupPage=yes
 LicenseFile=LICENSE.txt
 ; Uncomment the following line to run in non administrative install mode (install for current user only).
 ;PrivilegesRequired=lowest
-OutputBaseFilename=ppt-txt2img
+OutputBaseFilename=ppt-txt2img_v{#MyAppVersion}
 SolidCompression=yes
 WizardStyle=modern dynamic
 SetupIconFile=icon.ico

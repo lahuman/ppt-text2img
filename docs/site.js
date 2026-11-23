@@ -1,5 +1,5 @@
-/* Set published to true only after tag 1.3.1 and both release assets are public. */
-const release = Object.freeze({ version: "1.3.1", published: true, stableVersion: "1.3.1" });
+/* Set published to true only after tag 1.4 and both release assets are public. */
+const release = Object.freeze({ version: "1.4", published: true, stableVersion: "1.4" });
 
 (() => {
   "use strict";
@@ -10,7 +10,7 @@ const release = Object.freeze({ version: "1.3.1", published: true, stableVersion
     skip: "Skip to content", navRelease: "What’s new", navWorkflow: "How it works", navDownload: "Download",
     heroTitle: "Different fonts.<br><em>The same impression.</em>",
     heroLead: "Prepare a delivery copy that travels with its design. Convert the text in your PPT into images before sharing it with another PC.",
-    heroCta: "Download v1.3.1 <span aria-hidden='true'>↗</span>",
+    heroCta: "Download v1.4 <span aria-hidden='true'>↗</span>",
     compatibility: "Windows 10 / 11 · Microsoft PowerPoint required",
     previewCaption: "v1.2 Windows portable app. Click to view the full-size screenshot.",
     principle1: "Processed on your PC", principle2: "A separate delivery copy", principle3: "한국어 · English",
@@ -21,16 +21,17 @@ const release = Object.freeze({ version: "1.3.1", published: true, stableVersion
     feature2Title: "Keep the original shape until replacement",
     feature2Body: "Images are generated from duplicates. The original shape is replaced only after success. Rotation and stacking are adjusted; saving stops if temporary objects cannot be safely removed.",
     feature3Title: "Partial completion gets its own warning",
-    feature3Body: "If an item cannot be converted, the app warns you. A JSON report next to the output lists conversion counts and the slides and processing stages that need review.",
+    feature3Body: "If an item cannot be converted, the app warns you. In v1.4, select View issues beside the result button to inspect affected slides and processing stages.",
     reportTitle: "Know where to take a closer look.",
     reportBody: "Tables, charts, and SmartArt are not automatically converted. They are recorded as items that need manual review.",
-    reportCaption: "Illustrative report only. These are not results from a real document.",
+    issueExample: "Slide 3 · Shape 2 · Stage unsupported<br>Table, chart or SmartArt requires manual review",
+    reportCaption: "Example of an item shown in View issues.",
     workflowTitle: "Choose. Review. Convert.", step1Title: "Choose your PPT",
     step1Body: "Use Browse files or Ctrl+O to select a .ppt or .pptx presentation.",
     step2Title: "Start the conversion",
     step2Body: "Close the source file in PowerPoint, select Convert to images, and review the confirmation dialog.",
     step3Title: "Check the result",
-    step3Body: "Find the new PPT and report in the original folder. If you see a partial-completion warning, review the listed slides.",
+    step3Body: "Open the converted PPT from the result screen. If you see a partial-completion warning, review the listed slides.",
     limitsTitle: "Before you convert.", limit1Title: "PowerPoint and the original fonts are required",
     limit1Body: "The app uses Microsoft PowerPoint installed on Windows. The conversion PC must have access to the original fonts, and the source PPT must be closed.",
     limit2Title: "Converted text is no longer directly editable",
@@ -40,7 +41,7 @@ const release = Object.freeze({ version: "1.3.1", published: true, stableVersion
     limit4Title: "Font license conditions still apply",
     limit4Body: "Turning text into images does not waive the font’s use or distribution license conditions.",
     downloadTitle: "Prepare the copy<br>you’ll present.",
-    downloadLead: "Download the v1.3.1 installer or portable executable for Windows.",
+    downloadLead: "Download the v1.4 installer or portable executable for Windows.",
     allReleases: "Check GitHub Releases ↗", downloadCardTitle: "PPT Text to Image",
     downloadRequirement: "For Windows PCs with Microsoft PowerPoint installed",
     checksums: "SHA-256 checksums", portableDownload: "Download the portable executable",
@@ -66,23 +67,25 @@ const release = Object.freeze({ version: "1.3.1", published: true, stableVersion
     document.querySelectorAll("[data-release-status]").forEach(el => { el.textContent = status; });
     const version = release.published ? release.version : release.stableVersion;
     const download = document.querySelector("[data-download]");
-    download.href = `${repository}/releases/download/${version}/ppt-txt2img.exe`;
+    const suffix = `_v${version}`;
+    download.href = `${repository}/releases/download/${version}/ppt-txt2img${suffix}.exe`;
     download.textContent = lang === "en"
       ? `${release.published ? "Download" : "Previous release"} v${version} ↓`
       : `${release.published ? "다운로드" : "기존 배포"} v${version}${release.published ? "" : " 다운로드"} ↓`;
     const portable = document.querySelector("[data-portable]");
-    portable.hidden = !release.published;
-    portable.href = `${repository}/releases/download/${release.version}/ppt-txt2img-portable.exe`;
+    portable.hidden = false;
+    portable.href = `${repository}/releases/download/${version}/ppt-txt2img-portable${suffix}.exe`;
+    document.querySelector("[data-i18n=checksums]").href = `${repository}/releases/download/${version}/SHA256SUMS.txt`;
     const primary = document.querySelector("[data-primary-link]");
     primary.href = release.published ? "#download" : "#release";
     if (release.published) {
       primary.textContent = lang === "en" ? `Download v${release.version} ↗` : `v${release.version} 다운로드 ↗`;
       document.querySelector("[data-i18n=downloadLead]").textContent = lang === "en"
-        ? "Version 1.3.1 supports font substitution on drives without named streams."
-        : "v1.3.1에서는 보안 표시를 지원하지 않는 드라이브에서도 글꼴을 대체할 수 있습니다.";
+        ? "Download the installer or portable app for Windows."
+        : "Windows용 설치 프로그램이나 포터블 앱을 다운로드하세요.";
       document.querySelector("[data-i18n=downloadNote]").textContent = lang === "en"
-        ? "Choose the installer or the portable executable. Both require Microsoft PowerPoint."
-        : "설치 프로그램 또는 설치 없는 실행 파일을 선택하세요. 두 방식 모두 Microsoft PowerPoint가 필요합니다.";
+        ? "Installer: ppt-txt2img_v1.4.exe · Portable: ppt-txt2img-portable_v1.4.exe"
+        : "설치 파일은 ppt-txt2img_v1.4.exe, 포터블 파일은 ppt-txt2img-portable_v1.4.exe입니다.";
     }
     try { localStorage.setItem("ppt-text2img-lang", lang); } catch { /* Storage may be disabled. */ }
   }

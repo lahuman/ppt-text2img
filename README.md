@@ -4,13 +4,19 @@ PowerPoint의 텍스트가 포함된 도형을 PNG로 바꿔, 다른 PC에서 �
 
 ## 버전과 다운로드
 
-**[v1.3.1 정식 출시](https://github.com/lahuman/ppt-text2img/releases/tag/1.3.1)** · Windows x64 · Microsoft PowerPoint 필요
+**[v1.4 정식 출시](https://github.com/lahuman/ppt-text2img/releases/tag/1.4)** · Windows x64 · Microsoft PowerPoint 필요
 
-[Windows 설치 프로그램](https://github.com/lahuman/ppt-text2img/releases/download/1.3.1/ppt-txt2img.exe) · [포터블 실행 파일](https://github.com/lahuman/ppt-text2img/releases/download/1.3.1/ppt-txt2img-portable.exe) · [SHA-256 체크섬](https://github.com/lahuman/ppt-text2img/releases/download/1.3.1/SHA256SUMS.txt)
+[Windows 설치 프로그램](https://github.com/lahuman/ppt-text2img/releases/download/1.4/ppt-txt2img_v1.4.exe) · [포터블 실행 파일](https://github.com/lahuman/ppt-text2img/releases/download/1.4/ppt-txt2img-portable_v1.4.exe) · [SHA-256 체크섬](https://github.com/lahuman/ppt-text2img/releases/download/1.4/SHA256SUMS.txt)
 
 - [소개 페이지](https://lahuman.github.io/ppt-text2img) / [페이지 소스](docs/index.html)
 - [릴리즈 노트](RELEASE_NOTES.md)
 - [릴리즈 절차](docs/RELEASING.md)
+
+## v1.4 변경 사항
+
+확인할 항목이 있을 때만 결과 파일 열기 오른쪽에 **특이사항 보기**가 표시됩니다. 버튼을 누르면 해당 슬라이드·도형과 처리 내용을 앱에서 확인할 수 있습니다. 결과 폴더에는 별도 JSON 보고서를 생성하지 않습니다.
+
+설치 파일은 `ppt-txt2img_v1.4.exe`, 포터블 파일은 `ppt-txt2img-portable_v1.4.exe`입니다. 두 파일 모두 이름 끝에서 버전을 확인할 수 있습니다.
 
 ## v1.3.1 변경 사항
 
@@ -64,20 +70,19 @@ PowerPoint의 텍스트가 포함된 도형을 PNG로 바꿔, 다른 PC에서 �
 | 결과 | 다음 작업 |
 | --- | --- |
 | 완료 | **결과 파일 열기**로 변환한 PPT를 엽니다. |
-| 일부 완료 | **보고서 확인**으로 검토할 항목을 확인하거나 **결과 파일 열기**로 PPT를 엽니다. |
+| 일부 완료 | **특이사항 보기**으로 검토할 항목을 확인하거나 **결과 파일 열기**로 PPT를 엽니다. |
 | 복구 필요 | **복구 파일 위치 열기**로 폴더를 열고, 화면에 표시된 파일을 확인한 뒤 다른 이름으로 저장합니다. |
 
-보고서에는 `converted_count`와 `issues`가 기록됩니다. 슬라이드에서 발생한 문제에는 슬라이드 번호와 처리 단계가 포함되며, 도형 번호는 그룹 해제 후 처리 순서 기준입니다. 보고서 저장 자체가 실패하면 결과 화면에서 파일 경로와 문제 내용을 확인할 수 있습니다.
+v1.4에서는 확인할 항목이 있을 때만 결과 열기 오른쪽에 **특이사항 보기**가 표시됩니다. 상세 내용은 앱에서 열리며 결과 폴더에 별도 보고서를 생성하지 않습니다.
 
 ### 안정화 기능
 
 - **취소 요청** 버튼으로 저장 시작 전까지 중단할 수 있습니다. 현재 실행 중인 PowerPoint COM 호출이 반환된 뒤 슬라이드·도형 경계에서 취소합니다. COM 자체가 멈추면 즉시 취소할 수 없으며, 사용자 PowerPoint를 강제 종료하지 않습니다.
 - 같은 사용자 임시 폴더를 사용하는 앱 실행 간에는 한 번에 하나의 변환만 허용합니다. 다른 변환은 대기열에 넣지 않고 안내합니다. 사용자가 직접 PowerPoint를 조작하는 것까지 차단하지는 않습니다.
 - 결과는 원본 폴더의 `.ppt-pixel-pending-*.ppt[x]`에 먼저 저장합니다. PowerPoint 닫기와 기본 파일 구조 검사를 마친 뒤 최종 이름으로 확정합니다. PPTX는 필수 ZIP 항목과 CRC, PPT는 OLE 헤더를 검사하며, 실제 PowerPoint 재개방이나 시각적 동일성을 보증하는 검사는 아닙니다.
-- PowerPoint가 결과 문서를 닫지 못하면 결과 화면에 복구용 임시 파일 경로가 표시됩니다. 이 경우 보고서의 상태는 `recovery_required`입니다. 구조 검사나 최종 이름 전환 실패 시에는 오류창에 남은 파일 경로를 표시합니다.
-- JSON 보고서는 임시 파일을 거쳐 교체합니다. 기존 `converted_count`, `issues`를 유지하며 `schema_version`, `job_id`, `state`, `metrics`를 추가합니다. 정리 단계 문제에는 슬라이드 번호가 없을 수 있습니다. PPT와 보고서 두 파일 전체가 하나의 트랜잭션으로 저장되는 것은 아닙니다.
+- PowerPoint가 결과 문서를 닫지 못하면 결과 화면에 복구용 임시 파일 경로가 표시됩니다. 구조 검사나 최종 이름 전환 실패 시에는 오류창에 남은 파일 경로를 표시합니다.
 - 렌더링 요청은 최대 2,500만 픽셀로 제한합니다. 이 값은 메모리 상한이나 성능 보장이 아니며, 문서별 실제 자원 사용은 별도 측정이 필요합니다.
-- GUI 실행 시 `%LOCALAPPDATA%\PPT-Pixel\logs\app.log`에 순환 로그를 기록합니다. 파일당 1MiB, 백업 3개를 유지합니다. 도형·저장 오류는 작업 ID와 단계별로 기록합니다. 도형 오류에는 슬라이드·도형 번호가, COM 오류에는 제공된 HRESULT와 PowerPoint 상세 메시지가 포함됩니다. 로그와 JSON 보고서의 오류 메시지에 파일명이나 경로가 포함될 수 있으므로 공유 전에 확인하세요.
+- GUI 실행 시 `%LOCALAPPDATA%\PPT-Pixel\logs\app.log`에 순환 로그를 기록합니다. 파일당 1MiB, 백업 3개를 유지합니다. 도형·저장 오류는 작업 ID와 단계별로 기록합니다. 도형 오류에는 슬라이드·도형 번호가, COM 오류에는 제공된 HRESULT와 PowerPoint 상세 메시지가 포함됩니다. 로그와 특이사항의 오류 메시지에 파일명이나 경로가 포함될 수 있으므로 공유 전에 확인하세요.
 
 코드는 `app.py`(UI), `conversion.py`(변환·COM·저장), `translations.py`(번역), `runtime_support.py`(동시 실행 제한·로그)로 나뉩니다. 기존 `app.text_to_image_ppt()` 호출은 유지하며, 선택적 `cancel_event` 인자를 지원합니다.
 
@@ -130,12 +135,12 @@ $env:RUN_UI_TESTS = "1"
 .\scripts\build-release.ps1 -Installer -InnoCompiler "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 ```
 
-결과는 `build/release-v1.3.1/`에 생성됩니다.
+결과는 `build/release-v1.4/`에 생성됩니다.
 
 | 파일 | 용도 |
 | --- | --- |
-| `ppt-txt2img-portable.exe` | 설치 없이 실행하는 앱 · PowerPoint는 필요 |
-| `ppt-txt2img.exe` | Inno Setup 설치 프로그램 · `-Installer` 사용 시 생성 |
+| `ppt-txt2img-portable_v1.4.exe` | 설치 없이 실행하는 앱 · PowerPoint는 필요 |
+| `ppt-txt2img_v1.4.exe` | Inno Setup 설치 프로그램 · `-Installer` 사용 시 생성 |
 | `SHA256SUMS.txt` | 해당 빌드 산출물의 SHA-256 체크섬 |
 
 저장소의 `Output/ppt-txt2img.exe`는 이전 배포 파일입니다. 새 릴리즈에는 빌드 스크립트가 생성한 파일을 사용하세요. 실행 파일은 Git 커밋 대신 GitHub Release 첨부 파일로 배포합니다.

@@ -3,6 +3,7 @@ import queue
 import logging
 import threading
 import time
+from tkinter.scrolledtext import ScrolledText
 import tkinter as tk
 from tkinter import filedialog, font as tkfont, messagebox, simpledialog, ttk
 
@@ -16,7 +17,7 @@ from conversion import (
     ungroup_all_shapes, ensure_runtime_requirements,
 )
 
-APP_VERSION = "1.3.1"
+APP_VERSION = "1.4"
 
 class RoundedPanel(tk.Canvas):
     """Rounded surface containing regular, keyboard-accessible Tk widgets."""
@@ -432,8 +433,7 @@ class App:
                 "state": result.state,
                 "output_path": result.output_path,
                 "converted_count": result.converted_count,
-                "issues": result.issues,
-                "report_path": result.report_path
+                "issues": result.issues
             })
         except ConversionCancelled:
             self.ui_event_queue.put({"type": "cancelled"})
@@ -543,7 +543,7 @@ class App:
             message = self.tr("dialog_recovery_msg", path=path)
         elif state == "partial":
             message = self.tr("dialog_partial_msg", count=event["converted_count"], failed=len(event["issues"]),
-                              path=path, report=event["report_path"] or str(event["issues"]))
+                              path=path)
         else:
             message = self.tr("dialog_done_msg", count=event["converted_count"], path=path)
         self.set_status(message, self.SUCCESS_COLOR if state == "complete" else self.WARNING_TEXT)
@@ -551,14 +551,25 @@ class App:
         self.btn_output.config(text=self.tr("open_recovery" if recovery else "open_result"),
                                command=lambda: self.open_path(target))
         self.btn_output.pack(side="left", pady=(10, 0))
-        if state == "partial" and event["report_path"]:
-            self.btn_report.config(text=self.tr("open_report"), command=lambda: self.open_path(event["report_path"]))
+        self.btn_output.configure(style="Primary.TButton")
+        self.btn_report.pack_forget()
+        if event["issues"]:
+            self.btn_report.config(text=self.tr("open_report"), command=lambda: self.show_issues(event["issues"]))
             self.btn_report.pack(side="left", padx=8, pady=(10, 0))
-            self.btn_report.pack_configure(before=self.btn_output)
-            self.btn_report.configure(style="Primary.TButton")
-            self.btn_output.configure(style="Secondary.TButton")
-        else:
-            self.btn_output.configure(style="Primary.TButton")
+
+    def show_issues(self, issues):
+        dialog = tk.Toplevel(self.root)
+        dialog.title(self.tr("open_report"))
+        dialog.transient(self.root)
+        details = ScrolledText(dialog, wrap="word", width=72, height=min(22, 3 + 3 * len(issues)))
+        details.pack(fill="both", expand=True)
+        for issue in issues:
+            parts = []
+            for key in ("slide", "shape_index", "stage"):
+                if key in issue:
+                    parts.append(f"{self.tr('issue_' + key)} {issue[key]}")
+            details.insert("end", " · ".join(parts) + "\n" + issue.get("error", "") + "\n\n")
+        details.configure(state="disabled")
 
     def select_file(self):
         if self.is_converting:

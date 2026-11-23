@@ -1,6 +1,5 @@
 """Opt-in integration checks; creates only temporary test presentations."""
 import hashlib
-import json
 import os
 import shutil
 import tempfile
@@ -104,8 +103,7 @@ class PowerPointTests(unittest.TestCase):
                     partial = worker.submit(app.text_to_image_ppt, str(source)).result()
             self.assertEqual(partial.converted_count, 0)
             self.assertEqual(len(partial.issues), 5)
-            report = json.loads(Path(partial.report_path).read_text(encoding="utf-8"))
-            self.assertEqual(len(report["issues"]), 5)
+            self.assertFalse(list(folder.glob("*.report.json")))
             self.assertEqual(presentation.Slides.Count, 1)
             presentation.Close()
             presentation = ppt.Presentations.Open(str(source), WithWindow=False)

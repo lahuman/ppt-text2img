@@ -113,7 +113,7 @@ class ConversionTests(unittest.TestCase):
 
     @patch("app.messagebox.showinfo")
     @patch("app.messagebox.showwarning")
-    def test_partial_conversion_prioritizes_report_action(self, warning, info):
+    def test_partial_conversion_offers_optional_issue_details(self, warning, info):
         ui = app.App.__new__(app.App)
         ui.lang_code = "ko"
         ui.is_converting = False
@@ -121,18 +121,20 @@ class ConversionTests(unittest.TestCase):
         ui.lbl_percent = Mock()
         ui.ui_event_queue = queue.Queue()
         ui.ui_event_queue.put({"type": "done", "state": "partial", "converted_count": 4,
-                               "issues": [{"slide": 2}], "output_path": "out.pptx",
-                               "report_path": "out.pptx.report.json"})
+                               "issues": [{"slide": 2}], "output_path": "out.pptx"})
         ui.set_status = Mock()
         ui.set_busy = Mock()
         ui.btn_output = Mock()
         ui.btn_report = Mock()
         ui.process_ui_events()
         self.assertEqual(ui.status_key, "status_partial")
-        ui.btn_report.pack_configure.assert_called_once_with(before=ui.btn_output)
+        ui.btn_report.pack.assert_called_once_with(side="left", padx=8, pady=(10, 0))
+        ui.show_issues = Mock()
         ui.open_path = Mock()
         ui.btn_report.config.call_args.kwargs["command"]()
-        ui.open_path.assert_called_once_with("out.pptx.report.json")
+        ui.show_issues.assert_called_once_with([{"slide": 2}])
+        ui.show_result(dict(ui.result_event, state="complete", issues=[]))
+        self.assertEqual(ui.btn_report.method_calls[-1][0], "pack_forget")
         warning.assert_not_called()
         info.assert_not_called()
 

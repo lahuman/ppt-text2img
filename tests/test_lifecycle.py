@@ -1,4 +1,3 @@
-import json
 import logging
 import tempfile
 import threading
@@ -94,8 +93,7 @@ class LifecycleTests(unittest.TestCase):
         self.presentation.Close.side_effect = RuntimeError("close failed")
         result = self.convert()
         self.assertIn("close", [issue["stage"] for issue in result.issues])
-        report = json.loads(Path(result.report_path).read_text(encoding="utf-8"))
-        self.assertEqual(report["issues"], result.issues)
+        self.assertFalse(list(self.folder.glob("*.report.json")))
         self.com.CoUninitialize.assert_called_once()
         self.assertEqual(self.source.read_bytes(), b"original")
 
@@ -182,9 +180,8 @@ class LifecycleTests(unittest.TestCase):
         self.presentation.Close.side_effect = RuntimeError("close failed")
         result = self.convert()
         self.assertIn(".ppt-pixel-pending-", result.output_path)
-        report = json.loads(Path(result.report_path).read_text(encoding="utf-8"))
+        self.assertFalse(list(self.folder.glob("*.report.json")))
         self.assertEqual(result.state, "recovery_required")
-        self.assertEqual(report["state"], result.state)
         self.assertFalse(list(self.folder.glob("source_converted_*")))
 
     def test_oversized_slide_stops_before_export(self):
@@ -214,14 +211,11 @@ class LifecycleTests(unittest.TestCase):
         self.presentation.Close.assert_called_once()
         self.assertEqual(self.source.read_bytes(), b"original")
 
-    def test_report_failure_preserves_published_output_and_warns(self):
-        with patch.object(app.os, "replace", side_effect=PermissionError("report denied")):
-            result = self.convert()
-        self.assertTrue(Path(result.output_path).is_file())
-        self.assertEqual(result.report_path, "")
-        self.assertEqual(result.state, "partial")
-        self.assertEqual(result.issues[-1]["stage"], "report")
-        self.assertFalse(list(self.folder.glob(".ppt-pixel-report-*")))
+    def test_clean_result_has_no_report(self):
+        result = self.convert()
+        self.assertEqual(result.state, "complete")
+        self.assertFalse(result.issues)
+        self.assertFalse(list(self.folder.glob("*.report.json")))
 
     def test_staging_permission_error_is_classified_and_closed(self):
         real_mkstemp = tempfile.mkstemp

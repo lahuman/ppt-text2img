@@ -1,11 +1,11 @@
 param(
     [switch]$Installer,
-    [string]$InnoCompiler
+    [string]$InnoCompiler,
+    [string]$PythonPath = (Join-Path $PSScriptRoot '..\venv\Scripts\python.exe')
 )
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$pythonPath = Join-Path $projectRoot 'venv\Scripts\python.exe'
 if (-not (Test-Path -LiteralPath $pythonPath)) {
     throw 'Create venv and install requirements-dev.txt first. See README.md.'
 }
@@ -33,13 +33,13 @@ try {
     & $pythonPath -m PyInstaller --noconfirm --distpath (Join-Path $releaseDirectory 'app') --workpath (Join-Path $releaseDirectory 'work') app.spec
     if ($LASTEXITCODE -ne 0) { throw 'PyInstaller build failed.' }
     $appExe = Join-Path $releaseDirectory 'app\app.exe'
-    Copy-Item -LiteralPath $appExe -Destination (Join-Path $releaseDirectory 'ppt-txt2img-portable.exe')
+    Copy-Item -LiteralPath $appExe -Destination (Join-Path $releaseDirectory "ppt-txt2img-portable_v$releaseVersion.exe")
     if ($Installer) {
-        & $InnoCompiler "/DMyAppSource=$appExe" "/O$releaseDirectory" '/Fppt-txt2img' inno-setup.iss
+        & $InnoCompiler "/DMyAppSource=$appExe" "/O$releaseDirectory" inno-setup.iss
         if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
     }
-    $artifacts = @(Join-Path $releaseDirectory 'ppt-txt2img-portable.exe')
-    if ($Installer) { $artifacts += Join-Path $releaseDirectory 'ppt-txt2img.exe' }
+    $artifacts = @(Join-Path $releaseDirectory "ppt-txt2img-portable_v$releaseVersion.exe")
+    if ($Installer) { $artifacts += Join-Path $releaseDirectory "ppt-txt2img_v$releaseVersion.exe" }
     $checksums = foreach ($artifact in $artifacts) {
         $hash = Get-FileHash -LiteralPath $artifact -Algorithm SHA256
         '{0}  {1}' -f $hash.Hash.ToLowerInvariant(), (Split-Path -Leaf $artifact)
