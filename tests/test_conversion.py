@@ -40,7 +40,7 @@ class ConversionTests(unittest.TestCase):
         slide.Shapes.AddPicture.return_value = picture
         return original, slide, duplicate, anchor, group, picture
 
-    @patch("app.crop_transparent_area", return_value=(20, 30, 100, 40))
+    @patch("conversion.crop_transparent_area", return_value=(20, 30, 100, 40))
     def test_export_failure_preserves_original(self, crop):
         original, slide, duplicate, anchor, group, picture = self.make_shapes()
         group.Export.side_effect = RuntimeError("export failed")
@@ -50,7 +50,7 @@ class ConversionTests(unittest.TestCase):
         group.Delete.assert_called_once()
         slide.Shapes.AddPicture.assert_not_called()
 
-    @patch("app.crop_transparent_area", return_value=(20, 30, 100, 40))
+    @patch("conversion.crop_transparent_area", return_value=(20, 30, 100, 40))
     def test_original_delete_failure_removes_replacement(self, crop):
         original, slide, duplicate, anchor, group, picture = self.make_shapes()
         original.Delete.side_effect = RuntimeError("delete failed")
@@ -59,7 +59,7 @@ class ConversionTests(unittest.TestCase):
         picture.Delete.assert_called_once()
         self.assertEqual(group.Delete.call_count, 1)
 
-    @patch("app.crop_transparent_area", return_value=(20, 30, 100, 40))
+    @patch("conversion.crop_transparent_area", return_value=(20, 30, 100, 40))
     def test_cleanup_failure_stops_document_save(self, crop):
         original, slide, duplicate, anchor, group, picture = self.make_shapes()
         group.Export.side_effect = RuntimeError("export failed")
@@ -73,6 +73,16 @@ class ConversionTests(unittest.TestCase):
         type(shape).HasTextFrame = property(lambda self: (_ for _ in ()).throw(RuntimeError("COM")))
         with self.assertRaises(RuntimeError):
             app.has_visible_text(shape)
+
+    @patch("conversion.crop_transparent_area", return_value=(20, 30, 100, 40))
+    def test_stuck_stacking_order_rolls_back_instead_of_looping(self, crop):
+        original, slide, duplicate, anchor, group, picture = self.make_shapes()
+        picture.ZOrderPosition = 3
+        with self.assertRaisesRegex(RuntimeError, "stacking order"):
+            app.shape_to_cropped_picture(slide, original, 720, 540, "unused.png")
+        picture.ZOrder.assert_called_once()
+        picture.Delete.assert_called_once()
+        original.Delete.assert_not_called()
 
     @patch("app.messagebox.showwarning")
     def test_close_during_conversion_keeps_window_open(self, warning):
@@ -93,7 +103,7 @@ class ConversionTests(unittest.TestCase):
         ui.progress_bar = {"maximum": 5}
         ui.lbl_percent = Mock()
         ui.ui_event_queue = queue.Queue()
-        ui.ui_event_queue.put({"type": "done", "converted_count": 4,
+        ui.ui_event_queue.put({"type": "done", "state": "partial", "converted_count": 4,
                                "issues": [{"slide": 2}], "output_path": "out.pptx",
                                "report_path": "out.pptx.report.json"})
         ui.set_status = Mock()
@@ -101,6 +111,24 @@ class ConversionTests(unittest.TestCase):
         ui.process_ui_events()
         warning.assert_called_once()
         info.assert_not_called()
+
+    @patch("app.messagebox.showwarning")
+    def test_worker_displays_recovery_path(self, warning):
+        ui = app.App.__new__(app.App)
+        ui.lang_code = "ko"
+        ui.is_converting = False
+        ui.progress_bar = {"maximum": 5}
+        ui.lbl_percent = Mock()
+        ui.ui_event_queue = queue.Queue()
+        ui.set_status = Mock()
+        ui.set_busy = Mock()
+        ui.cancel_event = None
+        result = app.ConversionResult("pending.pptx", state="recovery_required")
+        with patch("app.text_to_image_ppt", return_value=result):
+            ui.run_conversion_worker("source.pptx", {})
+        ui.process_ui_events()
+        self.assertEqual(ui.status_key, "status_recovery_required")
+        self.assertIn(result.output_path, warning.call_args.args[1])
 
     @patch("app.filedialog.askopenfilename", return_value="C:/slides/talk.pptx")
     @patch("app.messagebox.askokcancel")

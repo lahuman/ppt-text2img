@@ -43,6 +43,10 @@ class PowerPointTests(unittest.TestCase):
                     front = slide.Shapes.AddShape(1, 100, 110, 80, 60)
                     front.Fill.ForeColor.RGB = 255
                 elif case == "nested":
+                    left = slide.Shapes.AddShape(1, 10, 10, 15, 15)
+                    right = slide.Shapes.AddShape(1, 30, 10, 15, 15)
+                    artwork = slide.Shapes.Range([left.Name, right.Name]).Group()
+                    artwork.Name = "artwork"
                     companion = slide.Shapes.AddShape(1, 400, 100, 80, 60)
                     group = slide.Shapes.Range([shape.Name, companion.Name]).Group()
                     companion = slide.Shapes.AddShape(1, 500, 300, 40, 40)
@@ -67,6 +71,9 @@ class PowerPointTests(unittest.TestCase):
             presentation = ppt.Presentations.Open(result.output_path, WithWindow=False)
             for index, case in enumerate(("plain", "rotated", "overlap", "nested", "outside"), 1):
                 slide = presentation.Slides(index)
+                if case == "nested":
+                    artwork = slide.Shapes.Item("artwork")
+                    self.assertEqual(artwork.GroupItems.Count, 2)
                 path = folder / (case + "_after.png")
                 slide.Export(str(path), "PNG", 1440, 1080)
                 if os.environ.get("VERIFY_OUTPUT_DIR"):
@@ -92,7 +99,7 @@ class PowerPointTests(unittest.TestCase):
             # The caller's PowerPoint session must remain usable after conversion.
             self.assertGreaterEqual(ppt.Presentations.Count, 0)
             from unittest.mock import patch
-            with patch("app.shape_to_cropped_picture", side_effect=RuntimeError("injected export failure")):
+            with patch("conversion.shape_to_cropped_picture", side_effect=RuntimeError("injected export failure")):
                 with ThreadPoolExecutor(max_workers=1) as worker:
                     partial = worker.submit(app.text_to_image_ppt, str(source)).result()
             self.assertEqual(partial.converted_count, 0)
