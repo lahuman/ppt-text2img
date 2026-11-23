@@ -1,4 +1,6 @@
 import os
+import errno
+import shutil
 import tempfile
 import logging
 import json
@@ -17,6 +19,9 @@ from translations import LANG
 
 try:
     import pythoncom
+    import win32api
+    import win32con
+    import win32file
     import win32com.client
     COM_IMPORT_ERROR = None
 except ImportError as exc:
@@ -367,6 +372,24 @@ def suppress_alerts(powerpoint, cleanup_issues, job_id, phase):
             cleanup_issues.append({"stage": "restore_alerts", "error": str(exc)})
 
 
+def copy_zone_identifier(source, destination):
+    try:
+        zone = open(source + ":Zone.Identifier", "rb")
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        if getattr(exc, "winerror", None) in (1, 50):  # Unsupported stream operation
+            return
+        if exc.errno == errno.EINVAL:
+            volume = win32file.GetVolumePathName(os.path.realpath(source))
+            flags = win32api.GetVolumeInformation(volume)[3]
+            if not flags & win32con.FILE_NAMED_STREAMS:
+                return
+        raise
+    with zone, open(destination + ":Zone.Identifier", "wb") as target:
+        shutil.copyfileobj(zone, target)
+
+
 def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_event=None, saving_callback=None, font_choice=None):
     texts = texts or LANG["ko"]
     base_name, ext = os.path.splitext(input_ppt)
@@ -424,13 +447,7 @@ def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_
                         font_copy = working.name
                         write_replaced_copy(package, working, restricted, replacement, check)
                     if os.name == "nt":
-                        try:
-                            zone = open(abs_input_path + ":Zone.Identifier", "rb")
-                        except FileNotFoundError:
-                            pass
-                        else:
-                            with zone, open(font_copy + ":Zone.Identifier", "wb") as dest:
-                                dest.write(zone.read())
+                        copy_zone_identifier(abs_input_path, font_copy)
                     open_path = font_copy
         temp_fd, temp_png_path = tempfile.mkstemp(prefix="ppt_text_", suffix=".png")
         os.close(temp_fd)

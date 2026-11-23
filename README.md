@@ -4,13 +4,19 @@ PowerPoint의 텍스트가 포함된 도형을 PNG로 바꿔, 다른 PC에서 �
 
 ## 버전과 다운로드
 
-**[v1.3 정식 출시](https://github.com/lahuman/ppt-text2img/releases/tag/1.3)** · Windows x64 · Microsoft PowerPoint 필요
+**[v1.3.1 정식 출시](https://github.com/lahuman/ppt-text2img/releases/tag/1.3.1)** · Windows x64 · Microsoft PowerPoint 필요
 
-[Windows 설치 프로그램](https://github.com/lahuman/ppt-text2img/releases/download/1.3/ppt-txt2img.exe) · [포터블 실행 파일](https://github.com/lahuman/ppt-text2img/releases/download/1.3/ppt-txt2img-portable.exe) · [SHA-256 체크섬](https://github.com/lahuman/ppt-text2img/releases/download/1.3/SHA256SUMS.txt)
+[Windows 설치 프로그램](https://github.com/lahuman/ppt-text2img/releases/download/1.3.1/ppt-txt2img.exe) · [포터블 실행 파일](https://github.com/lahuman/ppt-text2img/releases/download/1.3.1/ppt-txt2img-portable.exe) · [SHA-256 체크섬](https://github.com/lahuman/ppt-text2img/releases/download/1.3.1/SHA256SUMS.txt)
 
 - [소개 페이지](https://lahuman.github.io/ppt-text2img) / [페이지 소스](docs/index.html)
 - [릴리즈 노트](RELEASE_NOTES.md)
 - [릴리즈 절차](docs/RELEASING.md)
+
+## v1.3.1 변경 사항
+
+글꼴 대체용 복사본을 만들 때 원본 저장소가 Windows 보안 표시(`Zone.Identifier`)를 지원하지 않아도 변환과 저장을 계속합니다. 기존 표시가 있으면 복사본에 그대로 보존하며, 표시를 읽거나 복사할 권한이 없으면 변환을 중단합니다.
+
+실제 D: 테스트 볼륨은 NTFS였습니다. 해당 폴더에서 스트림 미지원과 `Errno 22`를 재현한 뒤 실제 PowerPoint로 37장 PPTX를 변환했습니다. 도형 112개가 변환됐고 확인 필요 항목은 3개였습니다. 결과 파일의 37장을 확인했고, 원본과 입력 복사본의 SHA-256은 각각 테스트 전후 동일했습니다. 보안 표시의 바이트 단위 보존 검사를 포함해 로컬 테스트 47개가 통과했습니다.
 
 ## v1.3 변경 사항
 
@@ -124,7 +130,7 @@ $env:RUN_UI_TESTS = "1"
 .\scripts\build-release.ps1 -Installer -InnoCompiler "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 ```
 
-결과는 `build/release-v1.3/`에 생성됩니다.
+결과는 `build/release-v1.3.1/`에 생성됩니다.
 
 | 파일 | 용도 |
 | --- | --- |

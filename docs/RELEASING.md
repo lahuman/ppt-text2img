@@ -1,10 +1,10 @@
-# v1.3 릴리즈 준비 및 게시 순서
+# v1.3.1 릴리즈 준비 및 게시 순서
 
 현재 상태는 **출시 준비**이다. 빌드, 릴리즈 초안, 공개, 소개 페이지의 다운로드 전환 순서로 진행한다. 빌드 스크립트는 원격 저장소나 공개 릴리즈를 변경하지 않는다.
 
 ## GitHub Actions 자동 발행
 
-`.github/workflows/release.yml`은 `1.3`처럼 숫자로 시작하는 태그를 push하면 실행된다. 태그와 앱 버전 일치 확인, 단위·Tk UI 테스트, Windows 설치 프로그램·포터블 빌드, 설치된 파일의 해시 및 실행 시작 확인 후 세 파일을 릴리즈 초안에 첨부하고 공개한다. GitHub Actions의 `GITHUB_TOKEN`을 사용하며 개인 토큰은 필요하지 않다. PowerPoint가 없는 CI에서는 COM 통합 테스트가 생략되므로 태그 전 로컬 검증을 수행한다.
+`.github/workflows/release.yml`은 `1.3.1`처럼 숫자로 시작하는 태그를 push하면 실행된다. 태그와 앱 버전 일치 확인, 단위·Tk UI 테스트, Windows 설치 프로그램·포터블 빌드, 설치된 파일의 해시 및 실행 시작 확인 후 세 파일을 릴리즈 초안에 첨부하고 공개한다. GitHub Actions의 `GITHUB_TOKEN`을 사용하며 개인 토큰은 필요하지 않다. PowerPoint가 없는 CI에서는 COM 통합 테스트가 생략되므로 태그 전 로컬 검증을 수행한다.
 
 자동 발행을 사용할 때 아래 수동 초안 생성·첨부 단계는 중복 실행하지 않는다. 소개 페이지 전환은 실제 공개 및 다운로드 확인 후 수행한다. 실패한 실행에 초안이 남아 있으면 자산 상태를 먼저 확인하고 기존 공개 릴리즈를 덮어쓰지 않는다.
 
@@ -34,9 +34,9 @@ git diff --check
 .\scripts\build-release.ps1 -Installer -InnoCompiler "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 ```
 
-버전은 `app.py`의 `APP_VERSION = "1.3"`를 기준으로 읽는다. `inno-setup.iss`의 `MyAppVersion`과 `docs/site.js`의 `release.version`도 같은 값이어야 한다.
+버전은 `app.py`의 `APP_VERSION = "1.3.1"`를 기준으로 읽는다. `inno-setup.iss`의 `MyAppVersion`과 `docs/site.js`의 `release.version`도 같은 값이어야 한다.
 
-`build/release-v1.3/`에서 아래 파일을 확인한다.
+`build/release-v1.3.1/`에서 아래 파일을 확인한다.
 
 - `ppt-txt2img.exe`: 설치 프로그램. 기존 배포와 같은 다운로드 파일명이다.
 - `ppt-txt2img-portable.exe`: 설치 없는 실행 파일. PowerPoint 설치 의존성은 동일하다.
@@ -47,22 +47,22 @@ Inno Setup이 없으면 `-Installer` 없이 포터블 파일과 체크섬만 생
 ## 3. Git과 릴리즈 초안
 
 1. `git status`와 diff를 검토한다. 앱, 테스트, 의존성, 문서, 소개 페이지 및 빌드 스크립트가 포함되어야 한다. `build/`, `dist/` 및 가상환경은 커밋하지 않는다.
-2. 변경 사항을 커밋하고 원격에 push한다. 기존 GitHub Pages 게시 설정을 유지한다. 이 시점의 페이지는 v1.3를 출시 준비로 표시하고 기존 v1.2 다운로드를 안내한다.
-3. 해당 커밋을 가리키는 **`1.3` 태그**로 GitHub Release 초안을 만든다. 기존의 `1.0` 태그처럼 `v` 접두사가 없는 형식을 사용한다.
-4. 위의 세 파일을 초안에 첨부하고, 본문에는 `RELEASE_NOTES.md`의 v1.3 부분을 사용한다. PowerPoint 설치 필요 및 지원 제한도 명시한다.
+2. 변경 사항을 커밋하고 원격에 push한다. 기존 GitHub Pages 게시 설정을 유지한다. 이 시점의 페이지는 v1.3.1을 출시 준비로 표시하고 기존 v1.3 다운로드를 안내한다.
+3. 해당 커밋을 가리키는 **`1.3.1` 태그**로 GitHub Release 초안을 만든다. 기존의 `1.0` 태그처럼 `v` 접두사가 없는 형식을 사용한다.
+4. 위의 세 파일을 초안에 첨부하고, 본문에는 `RELEASE_NOTES.md`의 v1.3.1 부분을 사용한다. PowerPoint 설치 필요 및 지원 제한도 명시한다.
 5. 초안에서 설치 프로그램·포터블 파일·체크섬의 이름과 버전을 확인하고 설치·실행을 검증한다.
 
 ## 4. 공개 및 소개 페이지 전환
 
 릴리즈를 실제 공개한 후 다음 경로가 다운로드되는지 확인한다.
 
-- `https://github.com/lahuman/ppt-text2img/releases/download/1.3/ppt-txt2img.exe`
-- `https://github.com/lahuman/ppt-text2img/releases/download/1.3/ppt-txt2img-portable.exe`
+- `https://github.com/lahuman/ppt-text2img/releases/download/1.3.1/ppt-txt2img.exe`
+- `https://github.com/lahuman/ppt-text2img/releases/download/1.3.1/ppt-txt2img-portable.exe`
 
 이후 다음 내용을 함께 수정한다.
 
-1. `docs/site.js`의 `release.published`를 `false`에서 `true`로 변경한다. 페이지의 출시 상태, 기본 다운로드, 포터블 링크와 구버전 안내가 함께 바뀐다. `stableVersion`도 `1.3`로 맞춘다.
-2. README의 버전 표·다운로드·미출시 안내를 v1.3 출시 상태로 갱신한다.
+1. `docs/site.js`의 `release.published`를 `false`에서 `true`로 변경한다. 페이지의 출시 상태, 기본 다운로드, 포터블 링크와 구버전 안내가 함께 바뀐다. `stableVersion`도 `1.3.1`로 맞춘다.
+2. README의 버전 표·다운로드·미출시 안내를 v1.3.1 출시 상태로 갱신한다.
 3. 릴리즈 노트의 `출시 준비`와 미출시 문구를 실제 게시일·출시 상태로 바꾼다.
 4. 위 문서와 페이지 변경을 push하고 GitHub Pages에서 한국어·영어 다운로드와 모바일 표시를 확인한다.
 

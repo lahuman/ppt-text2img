@@ -16,7 +16,7 @@ from conversion import (
     ungroup_all_shapes, ensure_runtime_requirements,
 )
 
-APP_VERSION = "1.3"
+APP_VERSION = "1.3.1"
 
 class RoundedPanel(tk.Canvas):
     """Rounded surface containing regular, keyboard-accessible Tk widgets."""
