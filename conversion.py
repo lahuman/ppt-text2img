@@ -10,6 +10,7 @@ from uuid import uuid4
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from embedded_fonts import inspect_fonts, write_replaced_copy
 from PIL import Image
 from runtime_support import ConversionBusyError, conversion_slot
 from translations import LANG
@@ -139,6 +140,28 @@ class ConversionRecoveryError(RuntimeError):
     """Stop saving when temporary objects could not be removed safely."""
 
 
+def log_failure(job_id, stage, exc, *, slide=None, shape=None):
+    fields = [f"job={job_id}", f"stage={stage}"]
+    if slide is not None:
+        fields.extend((f"slide={slide}", f"shape={shape}"))
+    fields.append(f"type={type(exc).__name__}")
+    hresult = getattr(exc, "hresult", None)
+    if isinstance(hresult, int):
+        fields.append(f"hresult=0x{hresult & 0xffffffff:08X}")
+    info = getattr(exc, "excepinfo", None)
+    if info:
+        source, description, scode = info[1], info[2], info[5]
+        if source:
+            fields.append("source=" + json.dumps(source, ensure_ascii=False))
+        if isinstance(scode, int):
+            fields.append(f"scode=0x{scode & 0xffffffff:08X}")
+        if description:
+            fields.append("description=" + json.dumps(description, ensure_ascii=False))
+    message = getattr(exc, "strerror", None) or str(exc)
+    fields.append("message=" + json.dumps(message, ensure_ascii=False))
+    logging.warning("%s", " ".join(fields))
+
+
 def has_visible_text(shape):
     if not shape.HasTextFrame or not shape.TextFrame.HasText:
         return False
@@ -167,12 +190,12 @@ def inspect_group(group, cancel_event):
     return has_target, has_unsupported
 
 
-def ungroup_all_shapes(slide, issues, slide_index, cancel_event=None):
+def ungroup_all_shapes(slide, issues, slide_index, cancel_event=None, job_id="-"):
     # Snapshot references: replacing a shape changes collection indices.
-    pending = [slide.Shapes(i) for i in range(1, slide.Shapes.Count + 1)]
+    pending = [(str(i), slide.Shapes(i)) for i in range(1, slide.Shapes.Count + 1)]
     while pending:
         check_cancelled(cancel_event)
-        shape = pending.pop()
+        index, shape = pending.pop()
         try:
             if shape.Type == MsoShapeTypeGroup:
                 has_target, has_unsupported = inspect_group(shape, cancel_event)
@@ -182,15 +205,16 @@ def ungroup_all_shapes(slide, issues, slide_index, cancel_event=None):
                                        "error": "Group contains table, chart or SmartArt"})
                     continue
                 children = shape.Ungroup()
-                pending.extend(children.Item(i) for i in range(1, children.Count + 1))
+                pending.extend((f"{index}.{i}", children.Item(i)) for i in range(1, children.Count + 1))
         except ConversionCancelled:
             raise
         except Exception as exc:
+            log_failure(job_id, "shape.ungroup", exc, slide=slide_index, shape=index)
             issues.append({"slide": slide_index, "stage": "ungroup", "error": str(exc)})
 
 
 def crop_transparent_area(png_path, slide_width_pt, slide_height_pt):
-    with Image.open(png_path) as source:
+    with Image.open(png_path, formats=("PNG",)) as source:
         img = source.convert("RGBA")
     with img:
         with img.getchannel("A") as alpha:
@@ -222,6 +246,7 @@ def shape_to_cropped_picture(slide, shape, slide_width_pt, slide_height_pt, temp
     original_z = shape.ZOrderPosition
     duplicate = anchor = group = new_shape = None
     try:
+        operation = "shape.duplicate"
         duplicate = shape.Duplicate().Item(1)
         # Legacy PPT can give the duplicate the same name as the original.
         duplicate.Name = "__ppt_copy_" + uuid4().hex
@@ -256,11 +281,13 @@ def shape_to_cropped_picture(slide, shape, slide_width_pt, slide_height_pt, temp
                     top = max(top, math.floor(min(center_y - half_height, text_top)) - 36)
                     right = min(right, math.ceil(max(center_x + half_width, text_right)) + 36)
                     bottom = min(bottom, math.ceil(max(center_y + half_height, text_bottom)) + 36)
+        operation = "shape.anchor"
         anchor = slide.Shapes.AddShape(1, left, top, right - left, bottom - top)
         anchor.Name = "__ppt_anchor_" + uuid4().hex
         anchor.Line.Visible = msoFalse
         anchor.Fill.Visible = msoTrue
         anchor.Fill.Transparency = 1.0
+        operation = "shape.group"
         group = slide.Shapes.Range([duplicate.Name, anchor.Name]).Group()
         # Use the actual group bounds, including objects outside the slide.
         origin_left, origin_top = group.Left, group.Top
@@ -268,28 +295,35 @@ def shape_to_cropped_picture(slide, shape, slide_width_pt, slide_height_pt, temp
         # Render at a positive origin, then map back to the original coordinates.
         group.Left = 0
         group.Top = 0
+        operation = "shape.export"
         group.Export(temp_png_path, ppShapeFormatPNG,
                      round(slide_width_pt * 2), round(slide_height_pt * 2))
+        operation = "shape.crop"
         cropped = crop_transparent_area(temp_png_path, bounds_width, bounds_height)
         if not cropped:
             raise RuntimeError("No visible pixels found")
         left, top, width, height = cropped
+        operation = "shape.insert"
         new_shape = slide.Shapes.AddPicture(
             temp_png_path, False, True, origin_left + left, origin_top + top, width, height
         )
         new_shape.Name = shape.Name + "_img"
         # Rotation is already rendered into the PNG; do not rotate it again.
+        operation = "shape.delete_group"
         group.Delete()
         group = duplicate = anchor = None
+        operation = "shape.stack"
         while new_shape.ZOrderPosition > original_z:
             previous_z = new_shape.ZOrderPosition
             new_shape.ZOrder(msoSendBackward)
             if new_shape.ZOrderPosition >= previous_z:
                 raise RuntimeError("PowerPoint did not advance the stacking order")
         # Commit last: every operation above can fail without changing the original.
+        operation = "shape.delete_original"
         shape.Delete()
         return True
-    except Exception:
+    except Exception as primary:
+        primary.shape_operation = operation
         cleanup_errors = []
         objects = [new_shape, group] if group is not None else [new_shape, duplicate, anchor]
         for obj in objects:
@@ -297,9 +331,11 @@ def shape_to_cropped_picture(slide, shape, slide_width_pt, slide_height_pt, temp
                 try:
                     obj.Delete()
                 except Exception as exc:
-                    cleanup_errors.append(str(exc))
+                    cleanup_errors.append(exc)
         if cleanup_errors:
-            raise ConversionRecoveryError("Temporary shape cleanup failed; output was not saved")
+            recovery = ConversionRecoveryError("Temporary shape cleanup failed; output was not saved")
+            recovery.cleanup_errors = cleanup_errors
+            raise recovery from primary
         raise
 
 def check_cancelled(cancel_event):
@@ -307,18 +343,18 @@ def check_cancelled(cancel_event):
         raise ConversionCancelled()
 
 
-def text_to_image_ppt(input_ppt, progress_callback=None, texts=None, cancel_event=None, saving_callback=None):
+def text_to_image_ppt(input_ppt, progress_callback=None, texts=None, cancel_event=None, saving_callback=None, font_choice=None):
     texts = texts or LANG["ko"]
     check_cancelled(cancel_event)
     try:
         with conversion_slot():
-            return _convert_presentation(input_ppt, progress_callback, texts, cancel_event, saving_callback)
+            return _convert_presentation(input_ppt, progress_callback, texts, cancel_event, saving_callback, font_choice)
     except ConversionBusyError as exc:
         raise UserVisibleError(texts["dialog_error_title"], texts["error_busy"], kind="busy") from exc
 
 
 @contextmanager
-def suppress_alerts(powerpoint, cleanup_issues):
+def suppress_alerts(powerpoint, cleanup_issues, job_id, phase):
     previous = powerpoint.DisplayAlerts
     powerpoint.DisplayAlerts = 1
     try:
@@ -327,10 +363,11 @@ def suppress_alerts(powerpoint, cleanup_issues):
         try:
             powerpoint.DisplayAlerts = previous
         except Exception as exc:
+            log_failure(job_id, phase + ".restore_alerts", exc)
             cleanup_issues.append({"stage": "restore_alerts", "error": str(exc)})
 
 
-def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_event=None, saving_callback=None):
+def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_event=None, saving_callback=None, font_choice=None):
     texts = texts or LANG["ko"]
     base_name, ext = os.path.splitext(input_ppt)
     if ext.lower() not in (".ppt", ".pptx"):
@@ -359,6 +396,7 @@ def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_
     original_security = None
     cleanup_issues = []
     result = None
+    font_copy = None
     staged_path = None
     saved = False
 
@@ -370,6 +408,30 @@ def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_
     abs_output_path = os.path.abspath(output_ppt)
 
     try:
+        open_path = abs_input_path
+        if font_choice and ext.lower() == ".pptx" and zipfile.is_zipfile(abs_input_path):
+            with zipfile.ZipFile(abs_input_path) as package:
+                check = lambda: check_cancelled(cancel_event)
+                restricted = inspect_fonts(package, check)
+                if restricted:
+                    replacement = font_choice(restricted)
+                    check()
+                    if not replacement:
+                        raise ConversionCancelled()
+                    with tempfile.NamedTemporaryFile(dir=os.path.dirname(abs_input_path),
+                                                     prefix=".ppt-pixel-font-", suffix=ext,
+                                                     delete=False) as working:
+                        font_copy = working.name
+                        write_replaced_copy(package, working, restricted, replacement, check)
+                    if os.name == "nt":
+                        try:
+                            zone = open(abs_input_path + ":Zone.Identifier", "rb")
+                        except FileNotFoundError:
+                            pass
+                        else:
+                            with zone, open(font_copy + ":Zone.Identifier", "wb") as dest:
+                                dest.write(zone.read())
+                    open_path = font_copy
         temp_fd, temp_png_path = tempfile.mkstemp(prefix="ppt_text_", suffix=".png")
         os.close(temp_fd)
 
@@ -390,8 +452,8 @@ def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_
         powerpoint.AutomationSecurity = 3  # Disable macros in programmatically opened files.
 
         try:
-            with suppress_alerts(powerpoint, cleanup_issues):
-                presentation = powerpoint.Presentations.Open(abs_input_path, ReadOnly=True, Untitled=True, WithWindow=False)
+            with suppress_alerts(powerpoint, cleanup_issues, job_id, "open"):
+                presentation = powerpoint.Presentations.Open(open_path, ReadOnly=True, Untitled=True, WithWindow=False)
         except Exception as exc:
             logging.warning("Presentation open failed (%s)", type(exc).__name__)
             raise classify_open_error(exc, texts)
@@ -430,7 +492,7 @@ def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_
                 )
 
             # 그룹 해제 실패는 확인 필요 항목으로 기록한다.
-            ungroup_all_shapes(slide, result.issues, slide_index, cancel_event)
+            ungroup_all_shapes(slide, result.issues, slide_index, cancel_event, job_id)
 
             shapes = [slide.Shapes(i) for i in range(1, slide.Shapes.Count + 1)]
             next_update = 0.0
@@ -442,6 +504,7 @@ def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_
                                       texts["shape_progress"].format(current=slide_index, total=total_slides,
                                                                      shape=i, count=len(shapes)))
                     next_update = now + 0.35
+                stage = "shape.inspect"
                 try:
                     if shape.Type == MsoShapeTypeGroup:
                         continue
@@ -454,6 +517,7 @@ def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_
                     if not has_visible_text(shape):
                         continue
 
+                    stage = "shape.render"
                     render_started = time.perf_counter()
                     try:
                         ok = shape_to_cropped_picture(
@@ -468,17 +532,16 @@ def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_
                     if ok:
                         result.converted_count += 1
 
-                except ConversionRecoveryError:
+                except ConversionRecoveryError as exc:
+                    primary = exc.__cause__ or exc
+                    log_failure(job_id, getattr(primary, "shape_operation", stage), primary, slide=slide_index, shape=i)
+                    for error in getattr(exc, "cleanup_errors", ()):
+                        log_failure(job_id, "shape.rollback", error, slide=slide_index, shape=i)
                     raise
                 except Exception as e:
                     result.issues.append({"slide": slide_index, "shape_index": i,
                                           "stage": "convert", "error": str(e)})
-                    logging.warning(
-                        "Slide %s shape %s skipped (%s)",
-                        slide_index,
-                        i,
-                        type(e).__name__
-                    )
+                    log_failure(job_id, getattr(e, "shape_operation", stage), e, slide=slide_index, shape=i)
 
             if progress_callback:
                 progress_callback(
@@ -496,17 +559,20 @@ def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_
         if progress_callback:
             progress_callback(total_slides, total_slides, texts["status_saving"])
         save_started = time.perf_counter()
+        stage = "save.create_temp"
         try:
             staged_fd, staged_path = tempfile.mkstemp(prefix=".ppt-pixel-pending-", suffix=ext,
                                                       dir=os.path.dirname(abs_output_path))
             os.close(staged_fd)
-            with suppress_alerts(powerpoint, cleanup_issues):
+            stage = "save.configure_alerts"
+            with suppress_alerts(powerpoint, cleanup_issues, job_id, "save"):
+                stage = "save.SaveAs"
                 presentation.SaveAs(staged_path, 1 if ext.lower() == ".ppt" else 24)
             saved = True
             result.metrics.update(render_seconds=round(render_seconds, 4),
                                   save_seconds=round(time.perf_counter() - save_started, 4))
         except Exception as exc:
-            logging.warning("Presentation save failed (%s)", type(exc).__name__)
+            log_failure(job_id, stage, exc)
             raise classify_save_error(exc, texts)
 
 
@@ -516,7 +582,7 @@ def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_
                 action()
             except Exception as exc:
                 cleanup_issues.append({"stage": stage, "error": str(exc)})
-                logging.warning("Cleanup failed: %s (%s)", stage, type(exc).__name__)
+                log_failure(job_id, "cleanup." + stage, exc)
 
         if presentation is not None:
             cleanup("close", presentation.Close)
@@ -530,6 +596,8 @@ def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_
                 cleanup("quit", quit_owned_session)
         if temp_png_path:
             cleanup("temp_cleanup", lambda: os.remove(temp_png_path))
+        if font_copy:
+            cleanup("font_copy_cleanup", lambda: os.remove(font_copy))
         if staged_path and not saved:
             cleanup("staged_cleanup", lambda: os.remove(staged_path))
         cleanup("com_uninitialize", pythoncom.CoUninitialize)
@@ -555,11 +623,13 @@ def publish_output(result, staged_path, texts, job_id):
         result.output_path = staged_path
         result.state = "recovery_required"
     else:
+        stage = "save.validate"
         try:
             validate_output(staged_path, os.path.splitext(result.output_path)[1])
+            stage = "save.rename"
             os.rename(staged_path, result.output_path)
         except (OSError, ValueError, zipfile.BadZipFile) as exc:
-            logging.warning("Job %s output validation/publication failed (%s)", job_id, type(exc).__name__)
+            log_failure(job_id, stage, exc)
             raise UserVisibleError(texts["dialog_file_save_title"],
                                    texts["error_file_save_failed"] + "\n" + staged_path,
                                    kind="file_save") from exc

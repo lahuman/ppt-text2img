@@ -1,5 +1,13 @@
 LANG = {
     "ko": {
+        "font_title": "편집이 제한된 내장 글꼴",
+        "font_notice": "아래 글꼴은 문서 편집을 제한합니다. 작업용 복사본에서 대체하면 글자 폭과 줄바꿈이 달라질 수 있습니다. 원본은 보존됩니다.",
+        "font_slides": "슬라이드",
+        "font_not_direct": "직접 지정 없음",
+        "font_shared": "공유 서식·관련 개체 참조 (적용 가능 슬라이드)",
+        "font_replacement": "위 글꼴에 적용할 대체 글꼴",
+        "font_apply": "복사본에서 대체 후 변환",
+        "font_cancel": "취소",
         "app_title": "PPT 글씨 -> 이미지 변환기",
         "main_title": "글꼴은 달라도,\n디자인은 그대로.",
         "subtitle": "텍스트를 이미지로 바꿔, 다른 PC에서도 의도한 모습으로 전달하세요.",
@@ -121,6 +129,14 @@ LANG = {
         "lang_en": "English",
     },
     "en": {
+        "font_title": "Restricted embedded fonts",
+        "font_notice": "These fonts restrict document editing. Replacing them in a working copy may change text widths and line breaks. Your original is preserved.",
+        "font_slides": "Slides",
+        "font_not_direct": "No direct assignment",
+        "font_shared": "Shared formatting or related part (possible slides)",
+        "font_replacement": "Replacement for the fonts above",
+        "font_apply": "Replace in copy and convert",
+        "font_cancel": "Cancel",
         "app_title": "PPT Text to Image Converter",
         "main_title": "Different fonts.\nThe same impression.",
         "subtitle": "Turn text into images so your presentation travels with its design intact.",

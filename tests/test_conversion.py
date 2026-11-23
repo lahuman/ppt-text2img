@@ -10,6 +10,13 @@ import app
 
 
 class ConversionTests(unittest.TestCase):
+    def test_crop_rejects_non_png_content(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "export.png"
+            Image.new("RGB", (2, 2)).save(path, format="BMP")
+            with self.assertRaises(Image.UnidentifiedImageError):
+                app.crop_transparent_area(path, 2, 2)
+
     def test_transparent_crop_maps_pixels_to_points(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "crop.png"

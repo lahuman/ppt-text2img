@@ -1,5 +1,5 @@
-/* Set published to true only after tag 1.2 and both release assets are public. */
-const release = Object.freeze({ version: "1.2", published: true, stableVersion: "1.2" });
+/* Set published to true only after tag 1.3 and both release assets are public. */
+const release = Object.freeze({ version: "1.3", published: true, stableVersion: "1.3" });
 
 (() => {
   "use strict";
@@ -10,7 +10,7 @@ const release = Object.freeze({ version: "1.2", published: true, stableVersion: 
     skip: "Skip to content", navRelease: "What’s new", navWorkflow: "How it works", navDownload: "Download",
     heroTitle: "Different fonts.<br><em>The same impression.</em>",
     heroLead: "Prepare a delivery copy that travels with its design. Convert the text in your PPT into images before sharing it with another PC.",
-    heroCta: "Download v1.2 <span aria-hidden='true'>↗</span>",
+    heroCta: "Download v1.3 <span aria-hidden='true'>↗</span>",
     compatibility: "Windows 10 / 11 · Microsoft PowerPoint required",
     previewCaption: "v1.2 Windows portable app. Click to view the full-size screenshot.",
     principle1: "Processed on your PC", principle2: "A separate delivery copy", principle3: "한국어 · English",
@@ -40,7 +40,7 @@ const release = Object.freeze({ version: "1.2", published: true, stableVersion: 
     limit4Title: "Font license conditions still apply",
     limit4Body: "Turning text into images does not waive the font’s use or distribution license conditions.",
     downloadTitle: "Prepare the copy<br>you’ll present.",
-    downloadLead: "Download the v1.2 installer or portable executable for Windows.",
+    downloadLead: "Download the v1.3 installer or portable executable for Windows.",
     allReleases: "Check GitHub Releases ↗", downloadCardTitle: "PPT Text to Image",
     downloadRequirement: "For Windows PCs with Microsoft PowerPoint installed",
     checksums: "SHA-256 checksums", portableDownload: "Download the portable executable",
@@ -78,8 +78,8 @@ const release = Object.freeze({ version: "1.2", published: true, stableVersion: 
     if (release.published) {
       primary.textContent = lang === "en" ? `Download v${release.version} ↗` : `v${release.version} 다운로드 ↗`;
       document.querySelector("[data-i18n=downloadLead]").textContent = lang === "en"
-        ? "The new interface and reliability improvements are now available in v1.2."
-        : "새 UI와 안정성 개선을 담은 v1.2를 사용할 수 있습니다.";
+        ? "Embedded font checks and substitution are available in v1.3."
+        : "내장 글꼴 사전 검사와 대체 기능을 담은 v1.3를 사용할 수 있습니다.";
       document.querySelector("[data-i18n=downloadNote]").textContent = lang === "en"
         ? "Choose the installer or the portable executable. Both require Microsoft PowerPoint."
         : "설치 프로그램 또는 설치 없는 실행 파일을 선택하세요. 두 방식 모두 Microsoft PowerPoint가 필요합니다.";

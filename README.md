@@ -4,13 +4,19 @@ PowerPoint의 텍스트가 포함된 도형을 PNG로 바꿔, 다른 PC에서 �
 
 ## 버전과 다운로드
 
-**[v1.2 정식 출시](https://github.com/lahuman/ppt-text2img/releases/tag/1.2)** · Windows x64 · Microsoft PowerPoint 필요
+**[v1.3 정식 출시](https://github.com/lahuman/ppt-text2img/releases/tag/1.3)** · Windows x64 · Microsoft PowerPoint 필요
 
-[Windows 설치 프로그램](https://github.com/lahuman/ppt-text2img/releases/download/1.2/ppt-txt2img.exe) · [포터블 실행 파일](https://github.com/lahuman/ppt-text2img/releases/download/1.2/ppt-txt2img-portable.exe) · [SHA-256 체크섬](https://github.com/lahuman/ppt-text2img/releases/download/1.2/SHA256SUMS.txt)
+[Windows 설치 프로그램](https://github.com/lahuman/ppt-text2img/releases/download/1.3/ppt-txt2img.exe) · [포터블 실행 파일](https://github.com/lahuman/ppt-text2img/releases/download/1.3/ppt-txt2img-portable.exe) · [SHA-256 체크섬](https://github.com/lahuman/ppt-text2img/releases/download/1.3/SHA256SUMS.txt)
 
 - [소개 페이지](https://lahuman.github.io/ppt-text2img) / [페이지 소스](docs/index.html)
 - [릴리즈 노트](RELEASE_NOTES.md)
-- [v1.2 릴리즈 절차](docs/RELEASING.md)
+- [릴리즈 절차](docs/RELEASING.md)
+
+## v1.3 변경 사항
+
+- 변환 전에 PPTX의 편집 제한 내장 글꼴 이름과 사용 슬라이드를 표시합니다. 대체를 선택하면 작업용 복사본에만 적용합니다. 대체 글꼴에 따라 줄바꿈과 배치가 달라질 수 있습니다. 구형 PPT는 사전 검사 대상에서 제외됩니다.
+- 도형 처리와 파일 저장 실패를 구분해 로그에 기록합니다. 도형 오류에는 해당 슬라이드와 도형 번호를, PowerPoint 오류에는 제공된 HRESULT와 상세 메시지를 남깁니다.
+- Windows 빌드에 Python 3.14.10, Pillow 13.0.0, PyInstaller 6.22.3 보안 업데이트를 반영했습니다.
 
 ## v1.2 변경 사항
 
@@ -46,6 +52,7 @@ PowerPoint의 텍스트가 포함된 도형을 PNG로 바꿔, 다른 PC에서 �
 2. 선택한 경로를 확인하고 **이미지로 변환하기**를 누릅니다.
 3. 확인 팝업의 주의 사항을 확인한 뒤 변환을 시작합니다.
 4. 파일을 여는 동안 움직이는 진행 바가 표시됩니다. 변환이 시작되면 파일 선택 패널이 접히고 파일명, 현재 슬라이드와 도형 번호, 진행률이 표시됩니다. 창을 최소화해도 변환은 계속됩니다.
+   PPTX에 보기·인쇄 전용 또는 편집이 제한된 내장 글꼴이 있으면 글꼴 이름과 직접 지정된 슬라이드 번호를 먼저 표시합니다. 공유 서식의 적용 가능 슬라이드는 따로 표시합니다. 설치된 대체 글꼴을 선택하면 임시 복사본에 적용해 변환하며, 취소하면 결과를 저장하지 않습니다. 글꼴 교체로 줄바꿈이 달라질 수 있습니다. 이 검사는 PowerPoint의 EOT 내장 글꼴을 대상으로 하며 구형 바이너리 PPT는 기존 방식으로 변환합니다.
 5. 저장과 파일 확인이 끝나면 같은 화면에서 결과를 확인합니다.
 
 | 결과 | 다음 작업 |
@@ -64,7 +71,7 @@ PowerPoint의 텍스트가 포함된 도형을 PNG로 바꿔, 다른 PC에서 �
 - PowerPoint가 결과 문서를 닫지 못하면 결과 화면에 복구용 임시 파일 경로가 표시됩니다. 이 경우 보고서의 상태는 `recovery_required`입니다. 구조 검사나 최종 이름 전환 실패 시에는 오류창에 남은 파일 경로를 표시합니다.
 - JSON 보고서는 임시 파일을 거쳐 교체합니다. 기존 `converted_count`, `issues`를 유지하며 `schema_version`, `job_id`, `state`, `metrics`를 추가합니다. 정리 단계 문제에는 슬라이드 번호가 없을 수 있습니다. PPT와 보고서 두 파일 전체가 하나의 트랜잭션으로 저장되는 것은 아닙니다.
 - 렌더링 요청은 최대 2,500만 픽셀로 제한합니다. 이 값은 메모리 상한이나 성능 보장이 아니며, 문서별 실제 자원 사용은 별도 측정이 필요합니다.
-- GUI 실행 시 `%LOCALAPPDATA%\PPT-Pixel\logs\app.log`에 순환 로그를 기록합니다. 파일당 1MiB, 백업 3개를 유지합니다. 기본 로그에는 문서 내용·전체 경로·COM 오류 원문을 기록하지 않습니다. 옆에 저장되는 JSON 보고서에는 오류 원문과 경로가 포함될 수 있으므로 공유 전 확인하세요.
+- GUI 실행 시 `%LOCALAPPDATA%\PPT-Pixel\logs\app.log`에 순환 로그를 기록합니다. 파일당 1MiB, 백업 3개를 유지합니다. 도형·저장 오류는 작업 ID와 단계별로 기록합니다. 도형 오류에는 슬라이드·도형 번호가, COM 오류에는 제공된 HRESULT와 PowerPoint 상세 메시지가 포함됩니다. 로그와 JSON 보고서의 오류 메시지에 파일명이나 경로가 포함될 수 있으므로 공유 전에 확인하세요.
 
 코드는 `app.py`(UI), `conversion.py`(변환·COM·저장), `translations.py`(번역), `runtime_support.py`(동시 실행 제한·로그)로 나뉩니다. 기존 `app.text_to_image_ppt()` 호출은 유지하며, 선택적 `cancel_event` 인자를 지원합니다.
 
@@ -87,10 +94,11 @@ PowerPoint 14.0에서 한영 텍스트 도형 24개가 있는 4장짜리 PPTX �
 
 실제 PowerPoint에서 텍스트 도형 60개를 한 슬라이드에 넣고 첫 도형 표시 후 창을 최소화했습니다. 이 실행에서 도형 진행 문구는 11.3초 동안 26회 갱신됐고 60개 모두 변환됐습니다. 창을 복원해 결과 파일 생성과 열기 버튼에 전달되는 경로를 확인했습니다. 실제 PowerPoint·Tk UI 검사를 포함해 로컬 테스트 40개가 통과했습니다.
 
-Python 3.14, PowerPoint 2010 및 아래 의존성으로 검증했습니다. 최신 PowerPoint 버전에서는 별도 확인이 필요합니다.
+보안 패치 빌드는 Python 3.14.10과 아래 의존성을 사용합니다. PowerPoint 2010은 호환성 테스트에 사용한 버전이며 보안 지원이 종료됐습니다. 실제 문서 변환에는 보안 업데이트를 받는 PowerPoint를 사용하세요.
 
 ```powershell
 python -m venv venv
+.\venv\Scripts\python.exe -m pip install --upgrade pip==26.3
 .\venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .\venv\Scripts\python.exe app.py
 .\venv\Scripts\python.exe -m unittest discover -s tests -v
@@ -116,7 +124,7 @@ $env:RUN_UI_TESTS = "1"
 .\scripts\build-release.ps1 -Installer -InnoCompiler "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 ```
 
-결과는 `build/release-v1.2/`에 생성됩니다.
+결과는 `build/release-v1.3/`에 생성됩니다.
 
 | 파일 | 용도 |
 | --- | --- |

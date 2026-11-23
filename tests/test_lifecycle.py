@@ -1,4 +1,5 @@
 import json
+import logging
 import tempfile
 import threading
 import unittest
@@ -8,6 +9,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock, patch
 
 import conversion as app
+from runtime_support import configure_logging
 
 
 class LifecycleTests(unittest.TestCase):
@@ -39,6 +41,54 @@ class LifecycleTests(unittest.TestCase):
 
     def convert(self):
         return app.text_to_image_ppt(str(self.source))
+
+    @unittest.skipUnless(app.os.name == "nt", "Requires pywin32")
+    def test_export_and_saveas_errors_record_office_details_in_app_log(self):
+        from pywintypes import com_error
+
+        def office_error(description):
+            return com_error(-2147352567, "Exception occurred.",
+                             (0, "Microsoft PowerPoint", description, None, 0, -2147467259), None)
+
+        root = logging.getLogger()
+        previous = set(root.handlers)
+        self.addCleanup(root.setLevel, root.level)
+        path = configure_logging(self.folder)
+        for handler in set(root.handlers) - previous:
+            self.addCleanup(handler.close)
+            self.addCleanup(root.removeHandler, handler)
+
+        slide = MagicMock()
+        empty = MagicMock(Type=1, HasTable=False, HasChart=False, HasSmartArt=False, HasTextFrame=False)
+        text = MagicMock(Type=1, HasTable=False, HasChart=False, HasSmartArt=False,
+                         Rotation=0, Left=10, Top=20, Width=100, Height=30)
+        slide.Shapes.Count = 2
+        slide.Shapes.side_effect = lambda index: (empty, text)[index - 1]
+        slide.Shapes.Range.return_value.Group.return_value.Export.side_effect = office_error("도형 내보내기 실패")
+        self.presentation.Slides.Count = 2
+        self.presentation.Slides.__iter__.return_value = iter([MagicMock(), slide])
+        self.presentation.SaveAs.side_effect = office_error("저장할 수 없습니다.\r\n추가 설명")
+        with self.assertRaises(app.UserVisibleError):
+            self.convert()
+
+        lines = Path(path).read_text(encoding="utf-8").splitlines()
+        export, save = [line for line in lines if "hresult=" in line]
+        self.assertIn("stage=shape.export slide=2 shape=2", export)
+        self.assertIn("도형 내보내기 실패", export)
+        self.assertIn("stage=save.SaveAs", save)
+        self.assertIn(r"저장할 수 없습니다.\r\n추가 설명", save)
+        for line in (export, save):
+            self.assertIn("hresult=0x80020009", line)
+            self.assertIn("scode=0x80004005", line)
+            self.assertIn('source="Microsoft PowerPoint"', line)
+            self.assertIn('message="Exception occurred."', line)
+
+    def test_save_alert_error_is_distinct_from_saveas(self):
+        type(self.ppt).DisplayAlerts = PropertyMock(side_effect=[2, None, None, RuntimeError("alerts unavailable")])
+        with self.assertLogs(level="WARNING") as logs, self.assertRaises(app.UserVisibleError):
+            self.convert()
+        self.assertIn("stage=save.configure_alerts", logs.output[0])
+        self.presentation.SaveAs.assert_not_called()
 
     def test_close_failure_is_reported(self):
         self.presentation.Close.side_effect = RuntimeError("close failed")

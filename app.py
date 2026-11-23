@@ -4,7 +4,7 @@ import logging
 import threading
 import time
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, font as tkfont, messagebox, simpledialog, ttk
 
 from runtime_support import configure_logging
 from translations import LANG
@@ -16,7 +16,7 @@ from conversion import (
     ungroup_all_shapes, ensure_runtime_requirements,
 )
 
-APP_VERSION = "1.2"
+APP_VERSION = "1.3"
 
 class RoundedPanel(tk.Canvas):
     """Rounded surface containing regular, keyboard-accessible Tk widgets."""
@@ -44,6 +44,47 @@ class RoundedPanel(tk.Canvas):
                     width-1, radius, width-1, height-radius, width-1, height-1,
                     width-radius, height-1, radius, height-1, 1, height-1,
                     1, height-radius, 1, radius, 1, 1)
+
+
+class FontChoiceDialog(simpledialog.Dialog):
+    def __init__(self, parent, faces, texts):
+        self.faces = faces
+        self.texts = texts
+        super().__init__(parent, texts["font_title"])
+
+    def body(self, master):
+        ttk.Label(master, text=self.texts["font_notice"], wraplength=470).pack(anchor="w", pady=6)
+        details = tk.Text(master, width=54, height=min(9, 2 + 2 * len(self.faces)), wrap="word")
+        for name, face in self.faces.items():
+            numbers = ", ".join(map(str, sorted(face.slides))) or self.texts["font_not_direct"]
+            details.insert("end", f"{name} · {self.texts['font_slides']} {numbers}\n")
+            if face.shared:
+                numbers = ", ".join(map(str, sorted(face.related_slides)))
+                details.insert("end", self.texts["font_shared"] + (" " + numbers if numbers else "") + "\n")
+        details.configure(state="disabled")
+        details.pack(fill="x")
+        ttk.Label(master, text=self.texts["font_replacement"]).pack(anchor="w", pady=(10, 2))
+        installed = set(tkfont.families(master))
+        groups = [("맑은 고딕", "Malgun Gothic"), ("Arial",), ("Segoe UI",)]
+        restricted = {face.casefold() for face in self.faces}
+        choices = [next(f for f in group if f in installed) for group in groups
+                   if installed.intersection(group) and not restricted.intersection(f.casefold() for f in group)]
+        self.selector = ttk.Combobox(master, values=choices, state="readonly")
+        if choices:
+            self.selector.current(0)
+        self.selector.pack(fill="x")
+        return self.selector
+
+    def buttonbox(self):
+        bar = ttk.Frame(self)
+        bar.pack(pady=10)
+        ttk.Button(bar, text=self.texts["font_apply"], command=self.ok,
+                   state="normal" if self.selector.get() else "disabled").pack(side="left", padx=4)
+        ttk.Button(bar, text=self.texts["font_cancel"], command=self.cancel).pack(side="left")
+        self.bind("<Escape>", self.cancel)
+
+    def apply(self):
+        self.result = self.selector.get()
 
 
 class App:
@@ -366,11 +407,22 @@ class App:
             "message": message
         })
 
+    def request_font_choice(self, faces):
+        reply = queue.Queue(maxsize=1)
+        self.ui_event_queue.put({"type": "font_choice", "faces": faces, "reply": reply})
+        while not self.cancel_event.is_set():
+            try:
+                return reply.get(timeout=0.1)
+            except queue.Empty:
+                continue
+        return None
+
     def run_conversion_worker(self, filepath, texts):
         try:
             result = text_to_image_ppt(
                 filepath,
                 progress_callback=self.enqueue_progress,
+                font_choice=self.request_font_choice,
                 saving_callback=lambda: self.ui_event_queue.put({"type": "saving"}),
                 texts=texts,
                 cancel_event=self.cancel_event
@@ -410,7 +462,14 @@ class App:
 
             event_type = event["type"]
 
-            if event_type == "saving":
+            if event_type == "font_choice":
+                choice = None
+                try:
+                    if not self.cancel_event.is_set():
+                        choice = FontChoiceDialog(self.root, event["faces"], LANG[self.lang_code]).result
+                finally:
+                    event["reply"].put(choice)
+            elif event_type == "saving":
                 self.saving = True
                 self.btn_cancel.config(state="disabled")
                 self.show_activity("status_saving")

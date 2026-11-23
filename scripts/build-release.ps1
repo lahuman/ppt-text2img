@@ -9,6 +9,10 @@ $pythonPath = Join-Path $projectRoot 'venv\Scripts\python.exe'
 if (-not (Test-Path -LiteralPath $pythonPath)) {
     throw 'Create venv and install requirements-dev.txt first. See README.md.'
 }
+& $pythonPath -c 'import sys; sys.exit(sys.version_info[:3] < (3, 14, 10))'
+if ($LASTEXITCODE -ne 0) {
+    throw 'Recreate the build venv with Python 3.14.10 or later and install requirements-dev.txt.'
+}
 $versionLine = Select-String -LiteralPath (Join-Path $projectRoot 'app.py') -Pattern '^APP_VERSION = "([0-9.]+)"$'
 if (-not $versionLine) { throw 'APP_VERSION was not found in app.py.' }
 $releaseVersion = $versionLine.Matches[0].Groups[1].Value

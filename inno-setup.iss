@@ -3,7 +3,7 @@
 ; Non-commercial use only
 
 #define MyAppName "ppt-txt2img"
-#define MyAppVersion "1.2"
+#define MyAppVersion "1.3"
 #define MyAppPublisher "lahuman"
 #define MyAppURL "https://lahuman.github.io/ppt-text2img"
 #define MyAppExeName "app.exe"
