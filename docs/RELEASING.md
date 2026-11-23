@@ -22,6 +22,10 @@ git diff --check
 
 추가로 최신 PowerPoint에서 실제 배포할 문서의 글꼴, 회전, 겹침 및 일부 완료 경고를 확인한다. 자동 테스트는 PowerPoint 2010 기준이며, 모든 문서의 시각적 동일성을 보장하지 않는다.
 
+안정화 변경 이후에는 임시 저장 후 닫기·최종 이름 전환이 실제 PowerPoint에서도 동작하는지 다시 확인한다. 취소 요청, 다른 앱 실행의 동시 변환 차단, 정리 실패 경고도 점검한다. 과거 PowerPoint 2010 실행 기록을 현재 커밋의 통과 결과로 대신하지 않는다. 수동 검사 기록에는 커밋 SHA, 실행일, Python·Office 버전과 결과를 함께 남긴다.
+
+일반 push·PR에서는 `.github/workflows/check.yml`이 PowerPoint를 제외한 단위·수명주기·Tk UI·동시 실행·로그 검사와 JavaScript 구문 검사를 수행한다. 원격 CI 통과 여부는 실제 실행 결과를 확인한다.
+
 ## 2. 배포 파일 생성
 
 `requirements-dev.txt`를 설치한 가상환경과 Inno Setup 컴파일러가 필요하다.

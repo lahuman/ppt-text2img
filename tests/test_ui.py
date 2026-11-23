@@ -52,6 +52,19 @@ class InterfaceTests(unittest.TestCase):
         self.root.update()
         self.assertGreater(self.ui.content_canvas.yview()[0], 0)
 
+    def test_cancel_request_keeps_busy_until_worker_finishes(self):
+        self.assertTrue(self.ui.btn_cancel.instate(["disabled"]))
+        self.ui.set_busy(True)
+        self.assertFalse(self.ui.btn_cancel.instate(["disabled"]))
+        self.ui.request_cancel()
+        self.assertTrue(self.ui.cancel_event.is_set())
+        self.assertTrue(self.ui.is_converting)
+        self.assertTrue(self.ui.btn_cancel.instate(["disabled"]))
+        self.ui.ui_event_queue.put({"type": "cancelled"})
+        self.ui.process_ui_events()
+        self.assertFalse(self.ui.is_converting)
+        self.assertEqual(self.ui.status_key, "status_cancelled")
+
 
 if __name__ == "__main__":
     unittest.main()
