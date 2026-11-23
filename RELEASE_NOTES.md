@@ -2,6 +2,8 @@
 
 ## v1.2 - 2026-11-23
 
+아이콘 갱신 빌드에서는 Windows 앱 창, 설치 프로그램, 포터블 실행 파일과 소개 페이지에 보라색 P 아이콘을 적용했습니다.
+
 [v1.2 정식 릴리스](https://github.com/lahuman/ppt-text2img/releases/tag/1.2) · Windows x64
 
 [Windows 설치 프로그램](https://github.com/lahuman/ppt-text2img/releases/download/1.2/ppt-txt2img.exe) · [포터블 실행 파일](https://github.com/lahuman/ppt-text2img/releases/download/1.2/ppt-txt2img-portable.exe) · [SHA-256 체크섬](https://github.com/lahuman/ppt-text2img/releases/download/1.2/SHA256SUMS.txt)

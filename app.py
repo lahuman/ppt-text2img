@@ -64,6 +64,8 @@ class App:
 
     def __init__(self, root):
         self.root = root
+        if os.name == "nt":
+            root.iconbitmap(default=os.path.join(os.path.dirname(__file__), "icon.ico"))
         self.lang_code = "ko"
         self.selected_file = ""
         self.is_converting = False
@@ -211,8 +213,12 @@ class App:
         self.btn_report = ttk.Button(self.result_actions, style="Secondary.TButton")
         self.warning_frame = tk.Frame(self.container, bg=self.BG_COLOR)
         self.warning_frame.pack(fill="x", pady=(16, 16))
-        tk.Label(self.warning_frame, text="i", bg=self.BG_COLOR, fg=self.MUTED_COLOR,
-                 font=("Segoe UI", 11, "bold")).pack(side="left", anchor="n", padx=(0, 10))
+        info = tk.Canvas(self.warning_frame, width=20, height=20, bg=self.BG_COLOR,
+                         highlightthickness=0)
+        info.pack(side="left", anchor="n", padx=(0, 8))
+        info.create_oval(2, 2, 18, 18, outline=self.PRIMARY_COLOR)
+        info.create_oval(9, 6, 11, 8, fill=self.PRIMARY_COLOR, outline="")
+        info.create_line(10, 10, 10, 14, fill=self.PRIMARY_COLOR, width=2)
         self.lbl_warning_body = tk.Label(self.warning_frame, bg=self.BG_COLOR, fg=self.MUTED_COLOR,
                                         font=("Malgun Gothic", 9), justify="left", anchor="w", wraplength=550)
         self.lbl_warning_body.pack(side="left", fill="x", expand=True)

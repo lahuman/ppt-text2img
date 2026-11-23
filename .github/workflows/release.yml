@@ -70,6 +70,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          TAG_UPDATED: ${{ github.event.forced }}
         run: |
           $tag = $env:GITHUB_REF_NAME
           $releaseDirectory = Join-Path $PWD "build/release-v$tag"
@@ -82,8 +83,13 @@ jobs:
           Set-Content -LiteralPath $notesFile -Value $body -Encoding utf8
           $assets = @('ppt-txt2img.exe', 'ppt-txt2img-portable.exe', 'SHA256SUMS.txt') | ForEach-Object { Join-Path $releaseDirectory $_ }
           foreach ($asset in $assets) { if (-not (Test-Path -LiteralPath $asset)) { throw "Missing release asset: $asset" } }
-          gh release create $tag @assets --verify-tag --draft --title "v$tag — UI 개선 및 변환 안정성 강화" --notes-file $notesFile
-          if ($LASTEXITCODE -ne 0) { throw 'Release draft creation failed; inspect existing drafts before retrying.' }
+          if ($env:TAG_UPDATED -eq 'true') {
+            gh release upload $tag @assets --clobber
+            if ($LASTEXITCODE -ne 0) { throw 'Release asset replacement failed.' }
+          } else {
+            gh release create $tag @assets --verify-tag --draft --title "v$tag — UI 개선 및 변환 안정성 강화" --notes-file $notesFile
+            if ($LASTEXITCODE -ne 0) { throw 'Release draft creation failed; inspect existing drafts before retrying.' }
+          }
           $remote = gh release view $tag --json assets | ConvertFrom-Json
           if ($LASTEXITCODE -ne 0) { throw 'Unable to verify release draft.' }
           foreach ($asset in $assets) {
@@ -91,5 +97,5 @@ jobs:
             $uploaded = @($remote.assets | Where-Object name -EQ $file.Name)
             if ($uploaded.Count -ne 1 -or $uploaded[0].size -ne $file.Length) { throw "Release asset mismatch: $($file.Name)" }
           }
-          gh release edit $tag --draft=false --latest
+          gh release edit $tag --draft=false --latest --notes-file $notesFile
           if ($LASTEXITCODE -ne 0) { throw 'Release publication failed.' }
