@@ -30,8 +30,16 @@ jobs:
           RUN_UI_TESTS: '1'
           RUN_POWERPOINT_TESTS: '0'
         run: |
-          python -B -m unittest discover -s tests -v
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $testLog = Join-Path $env:RUNNER_TEMP 'unittest.log'
+          python -B -m unittest discover -s tests -v 2>&1 | Tee-Object -FilePath $testLog
+          if ($LASTEXITCODE -ne 0) {
+            $failures = Select-String -Path $testLog -Pattern '^(FAIL|ERROR): |^[\w.]+(Error|Exception): '
+            foreach ($failure in $failures) {
+              $message = $failure.Line.Replace('%', '%25')
+              Write-Output "::error::$message"
+            }
+            exit 1
+          }
           node --check docs/site.js
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           git diff --check
