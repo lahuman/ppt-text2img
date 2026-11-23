@@ -3,7 +3,7 @@ import queue
 import logging
 import threading
 import time
-from tkinter.scrolledtext import ScrolledText
+from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, font as tkfont, messagebox, simpledialog, ttk
 
@@ -539,13 +539,11 @@ class App:
         recovery = state == "recovery_required"
         self.status_key = {"complete": "status_done", "partial": "status_partial",
                            "recovery_required": "status_recovery_required"}[state]
+        warnings = sum(issue.get("stage") == "unsupported" for issue in event["issues"])
+        message = self.tr("result_counts", count=event["converted_count"], warnings=warnings,
+                          errors=len(event["issues"]) - warnings)
         if recovery:
-            message = self.tr("dialog_recovery_msg", path=path)
-        elif state == "partial":
-            message = self.tr("dialog_partial_msg", count=event["converted_count"], failed=len(event["issues"]),
-                              path=path)
-        else:
-            message = self.tr("dialog_done_msg", count=event["converted_count"], path=path)
+            message = self.tr("status_recovery_required") + "\n" + message
         self.set_status(message, self.SUCCESS_COLOR if state == "complete" else self.WARNING_TEXT)
         target = os.path.dirname(path) if recovery else path
         self.btn_output.config(text=self.tr("open_recovery" if recovery else "open_result"),
@@ -554,22 +552,43 @@ class App:
         self.btn_output.configure(style="Primary.TButton")
         self.btn_report.pack_forget()
         if event["issues"]:
-            self.btn_report.config(text=self.tr("open_report"), command=lambda: self.show_issues(event["issues"]))
+            self.btn_report.config(text=self.tr("open_report"), command=lambda: self.save_report(event))
             self.btn_report.pack(side="left", padx=8, pady=(10, 0))
 
-    def show_issues(self, issues):
-        dialog = tk.Toplevel(self.root)
-        dialog.title(self.tr("open_report"))
-        dialog.transient(self.root)
-        details = ScrolledText(dialog, wrap="word", width=72, height=min(22, 3 + 3 * len(issues)))
-        details.pack(fill="both", expand=True)
-        for issue in issues:
-            parts = []
-            for key in ("slide", "shape_index", "stage"):
-                if key in issue:
-                    parts.append(f"{self.tr('issue_' + key)} {issue[key]}")
-            details.insert("end", " · ".join(parts) + "\n" + issue.get("error", "") + "\n\n")
-        details.configure(state="disabled")
+    def save_report(self, event):
+        output = Path(event["output_path"])
+        path = filedialog.asksaveasfilename(parent=self.root, title=self.tr("open_report"),
+                                            initialdir=str(output.parent), initialfile=output.stem + ".txt",
+                                            defaultextension=".txt", filetypes=[("Text", "*.txt")])
+        if not path:
+            return
+        if Path(path).suffix.lower() != ".txt":
+            messagebox.showerror(self.tr("open_report"), self.tr("report_txt"), parent=self.root)
+            return
+        lines = [output.name, self.tr("report_hint"), ""]
+        for issue in event["issues"]:
+            stage = issue.get("stage", "")
+            location = self.tr("report_document")
+            if "slide" in issue:
+                location = f"{self.tr('issue_slide')} {issue['slide']}"
+                if issue.get("slide_title"):
+                    location += " — " + issue["slide_title"]
+            if issue.get("shape_name"):
+                location += f" · {self.tr('issue_shape_index')} «{issue['shape_name']}»"
+            if issue.get("excerpt"):
+                location += f" · “{issue['excerpt']}”"
+            reason = stage if stage in ("unsupported", "ungroup", "convert") else "cleanup"
+            lines.append(location)
+            lines.append(self.tr("report_" + reason))
+            if stage != "unsupported":
+                lines.append(f"{stage} — {issue.get('error', '')}")
+            lines.append("")
+        try:
+            Path(path).write_text("\n".join(lines), encoding="utf-8-sig")
+        except OSError as exc:
+            messagebox.showerror(self.tr("open_report"), str(exc), parent=self.root)
+            return
+        messagebox.showinfo(self.tr("open_report"), self.tr("report_saved", path=path), parent=self.root)
 
     def select_file(self):
         if self.is_converting:

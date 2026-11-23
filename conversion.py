@@ -194,6 +194,23 @@ def inspect_group(group, cancel_event):
     return has_target, has_unsupported
 
 
+def issue_location(slide, slide_index, shape, index):
+    location = {"slide": slide_index, "shape_index": index}
+    # PowerPoint may invalidate a shape reference after an operation fails.
+    for key, read in (
+        ("shape_name", lambda: shape.Name),
+        ("slide_title", lambda: slide.Shapes.Title.TextFrame.TextRange.Text),
+        ("excerpt", lambda: shape.TextFrame.TextRange.Text),
+    ):
+        try:
+            value = read()
+            if isinstance(value, str) and value.strip():
+                location[key] = " ".join(value.split())[:100]
+        except Exception:
+            pass
+    return location
+
+
 def ungroup_all_shapes(slide, issues, slide_index, cancel_event=None, job_id="-"):
     # Snapshot references: replacing a shape changes collection indices.
     pending = [(str(i), slide.Shapes(i)) for i in range(1, slide.Shapes.Count + 1)]
@@ -205,7 +222,7 @@ def ungroup_all_shapes(slide, issues, slide_index, cancel_event=None, job_id="-"
                 has_target, has_unsupported = inspect_group(shape, cancel_event)
                 if not has_target:
                     if has_unsupported:
-                        issues.append({"slide": slide_index, "stage": "unsupported",
+                        issues.append({**issue_location(slide, slide_index, shape, index), "stage": "unsupported",
                                        "error": "Group contains table, chart or SmartArt"})
                     continue
                 children = shape.Ungroup()
@@ -214,7 +231,7 @@ def ungroup_all_shapes(slide, issues, slide_index, cancel_event=None, job_id="-"
             raise
         except Exception as exc:
             log_failure(job_id, "shape.ungroup", exc, slide=slide_index, shape=index)
-            issues.append({"slide": slide_index, "stage": "ungroup", "error": str(exc)})
+            issues.append({**issue_location(slide, slide_index, shape, index), "stage": "ungroup", "error": str(exc)})
 
 
 def crop_transparent_area(png_path, slide_width_pt, slide_height_pt):
@@ -525,7 +542,7 @@ def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_
                     if shape.Type == MsoShapeTypeGroup:
                         continue
                     if unsupported_shape(shape):
-                        result.issues.append({"slide": slide_index, "shape_index": i,
+                        result.issues.append({**issue_location(slide, slide_index, shape, i),
                                               "stage": "unsupported",
                                               "error": "Table, chart or SmartArt requires manual review"})
                         continue
@@ -555,7 +572,7 @@ def _convert_presentation(input_ppt, progress_callback=None, texts=None, cancel_
                         log_failure(job_id, "shape.rollback", error, slide=slide_index, shape=i)
                     raise
                 except Exception as e:
-                    result.issues.append({"slide": slide_index, "shape_index": i,
+                    result.issues.append({**issue_location(slide, slide_index, shape, i),
                                           "stage": "convert", "error": str(e)})
                     log_failure(job_id, getattr(e, "shape_operation", stage), e, slide=slide_index, shape=i)
 
