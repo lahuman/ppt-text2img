@@ -41,6 +41,16 @@ class ConversionTests(unittest.TestCase):
         return original, slide, duplicate, anchor, group, picture
 
     @patch("conversion.crop_transparent_area", return_value=(20, 30, 100, 40))
+    def test_export_canvas_includes_text_overhang_and_margin(self, crop):
+        original, slide, *_ = self.make_shapes()
+        original.Shadow.Visible = original.ThreeD.Visible = False
+        original.Glow.Radius = original.Reflection.Type = original.SoftEdge.Radius = 0
+        original.TextFrame.TextRange = Mock(BoundLeft=15, BoundTop=28,
+                                            BoundWidth=120, BoundHeight=48)
+        app.shape_to_cropped_picture(slide, original, 720, 540, "unused.png")
+        slide.Shapes.AddShape.assert_called_once_with(1, -21, -8, 192, 120)
+
+    @patch("conversion.crop_transparent_area", return_value=(20, 30, 100, 40))
     def test_export_failure_preserves_original(self, crop):
         original, slide, duplicate, anchor, group, picture = self.make_shapes()
         group.Export.side_effect = RuntimeError("export failed")

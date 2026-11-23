@@ -237,6 +237,25 @@ def shape_to_cropped_picture(slide, shape, slide_width_pt, slide_height_pt, temp
         top = min(0, center_y - half_height) - 36
         right = max(slide_width_pt, center_x + half_width) + 36
         bottom = max(slide_height_pt, center_y + half_height) + 36
+        # Whole-point origins preserve the pixel grid at the 2x export scale.
+        # Keep fractional canvases intact to preserve PowerPoint's rounding.
+        if all(float(value).is_integer() for value in (left, top, right, bottom)):
+            try:
+                has_effects = (shape.Shadow.Visible or shape.ThreeD.Visible or shape.Glow.Radius
+                               or shape.Reflection.Type or shape.SoftEdge.Radius)
+                text = shape.TextFrame.TextRange
+                text_left, text_top = text.BoundLeft, text.BoundTop
+                text_right = text_left + text.BoundWidth
+                text_bottom = text_top + text.BoundHeight
+            except Exception:
+                pass  # Some PowerPoint shapes do not expose rendered text bounds.
+
+            else:
+                if not has_effects:
+                    left = max(left, math.floor(min(center_x - half_width, text_left)) - 36)
+                    top = max(top, math.floor(min(center_y - half_height, text_top)) - 36)
+                    right = min(right, math.ceil(max(center_x + half_width, text_right)) + 36)
+                    bottom = min(bottom, math.ceil(max(center_y + half_height, text_bottom)) + 36)
         anchor = slide.Shapes.AddShape(1, left, top, right - left, bottom - top)
         anchor.Name = "__ppt_anchor_" + uuid4().hex
         anchor.Line.Visible = msoFalse
