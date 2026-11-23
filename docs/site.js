@@ -1,5 +1,5 @@
-/* Set published to true only after tag 1.4 and both release assets are public. */
-const release = Object.freeze({ version: "1.4", published: true, stableVersion: "1.4" });
+/* Set published to true only after tag 1.4.1 and both release assets are public. */
+const release = Object.freeze({ version: "1.4.1", published: true, stableVersion: "1.4.1" });
 
 (() => {
   "use strict";
@@ -10,7 +10,7 @@ const release = Object.freeze({ version: "1.4", published: true, stableVersion: 
     skip: "Skip to content", navRelease: "Features", navWorkflow: "How it works", navDownload: "Download",
     heroTitle: "Convert PPT text<br><em>to images</em>",
     heroLead: "Text in the copy looks the same on PCs without the original fonts. You can still edit the original file.",
-    heroCta: "Download v1.4 <span aria-hidden='true'>↗</span>",
+    heroCta: "Download v1.4.1 <span aria-hidden='true'>↗</span>",
     compatibility: "Windows 10 / 11 · Microsoft PowerPoint required",
     previewCaption: "v1.2 Windows portable app. Click to view the full-size screenshot.",
     releaseTitle: "Conversion features",

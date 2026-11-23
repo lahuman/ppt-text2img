@@ -4,13 +4,17 @@ PowerPoint의 텍스트가 포함된 도형을 PNG로 바꿔, 다른 PC에서 �
 
 ## 버전과 다운로드
 
-**[v1.4 정식 출시](https://github.com/lahuman/ppt-text2img/releases/tag/1.4)** · Windows x64 · Microsoft PowerPoint 필요
+**[v1.4.1 정식 출시](https://github.com/lahuman/ppt-text2img/releases/tag/1.4.1)** · Windows x64 · Microsoft PowerPoint 필요
 
-[Windows 설치 프로그램](https://github.com/lahuman/ppt-text2img/releases/download/1.4/ppt-txt2img_v1.4.exe) · [포터블 실행 파일](https://github.com/lahuman/ppt-text2img/releases/download/1.4/ppt-txt2img-portable_v1.4.exe) · [SHA-256 체크섬](https://github.com/lahuman/ppt-text2img/releases/download/1.4/SHA256SUMS.txt)
+[Windows 설치 프로그램](https://github.com/lahuman/ppt-text2img/releases/download/1.4.1/ppt-txt2img_v1.4.1.exe) · [포터블 실행 파일](https://github.com/lahuman/ppt-text2img/releases/download/1.4.1/ppt-txt2img-portable_v1.4.1.exe) · [SHA-256 체크섬](https://github.com/lahuman/ppt-text2img/releases/download/1.4.1/SHA256SUMS.txt)
 
 - [소개 페이지](https://lahuman.github.io/ppt-text2img) / [페이지 소스](docs/index.html)
 - [릴리즈 노트](RELEASE_NOTES.md)
 - [릴리즈 절차](docs/RELEASING.md)
+
+## v1.4.1 변경 사항
+
+한국어와 영어 실행 화면에서 파일 선택, 변환 취소, 결과 저장 안내를 다듬었습니다. 변환 확인창에는 닫아야 할 파일과 결과가 저장될 위치를 표시합니다.
 
 ## v1.4 변경 사항
 
@@ -135,12 +139,12 @@ $env:RUN_UI_TESTS = "1"
 .\scripts\build-release.ps1 -Installer -InnoCompiler "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 ```
 
-결과는 `build/release-v1.4/`에 생성됩니다.
+결과는 `build/release-v1.4.1/`에 생성됩니다.
 
 | 파일 | 용도 |
 | --- | --- |
-| `ppt-txt2img-portable_v1.4.exe` | 설치 없이 실행하는 앱 · PowerPoint는 필요 |
-| `ppt-txt2img_v1.4.exe` | Inno Setup 설치 프로그램 · `-Installer` 사용 시 생성 |
+| `ppt-txt2img-portable_v1.4.1.exe` | 설치 없이 실행하는 앱 · PowerPoint는 필요 |
+| `ppt-txt2img_v1.4.1.exe` | Inno Setup 설치 프로그램 · `-Installer` 사용 시 생성 |
 | `SHA256SUMS.txt` | 해당 빌드 산출물의 SHA-256 체크섬 |
 
 저장소의 `Output/ppt-txt2img.exe`는 이전 배포 파일입니다. 새 릴리즈에는 빌드 스크립트가 생성한 파일을 사용하세요. 실행 파일은 Git 커밋 대신 GitHub Release 첨부 파일로 배포합니다.
