@@ -1,8 +1,10 @@
 # Release Notes
 
-## v1.2 - 출시 준비
+## v1.2 - 2026-11-23
 
-배포 상태: 미출시. 아래 변경은 현재 소스에 반영되어 있으며, GitHub Releases 게시 후 사용할 수 있습니다.
+[v1.2 정식 릴리스](https://github.com/lahuman/ppt-text2img/releases/tag/1.2) · Windows x64
+
+[Windows 설치 프로그램](https://github.com/lahuman/ppt-text2img/releases/download/1.2/ppt-txt2img.exe) · [포터블 실행 파일](https://github.com/lahuman/ppt-text2img/releases/download/1.2/ppt-txt2img-portable.exe) · [SHA-256 체크섬](https://github.com/lahuman/ppt-text2img/releases/download/1.2/SHA256SUMS.txt)
 
 - 정리 단계의 닫기·설정 복원·임시 파일 삭제 실패를 기록하고, 한 단계 실패가 다른 정리를 막지 않도록 했습니다.
 - 저장 전 협력적 취소, 경과 시간 표시와 동일 사용자 임시 폴더를 사용하는 앱 간 동시 변환 제한을 추가했습니다. 진행 중인 COM 호출의 강제 중단은 지원하지 않습니다.
@@ -22,7 +24,6 @@
 - 임시 도형 정리에 실패하면 결과 저장을 중단합니다. 변환 중 창 닫기를 제한합니다.
 - 읽기 전용 복사본에서 처리하고 파일을 열 때 매크로를 차단합니다. PowerPoint 경고 억제 범위를 파일 열기와 저장 호출로 좁혀, 도형 변환 중에는 기존 세션의 경고 설정을 유지합니다.
 - 회귀 테스트, 의존성 목록과 빌드 절차를 추가하고 설치 스크립트의 절대 경로 및 사용하지 않는 파일 연결을 제거합니다.
-- v1.1 다운로드 파일에는 위 변경이 포함되지 않습니다.
 
 ## v1.1 - 2026-04-14
 

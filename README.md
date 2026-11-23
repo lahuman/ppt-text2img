@@ -4,12 +4,9 @@ PowerPoint의 텍스트가 포함된 도형을 PNG로 바꿔, 다른 PC에서 �
 
 ## 버전과 다운로드
 
-| 구분 | 버전 | 상태 |
-| --- | --- | --- |
-| 현재 소스 | **v1.2** | 출시 준비 · 새 UI 및 변환 안정성 개선 |
-| 기존 배포 | v1.1 | [기존 Windows 설치 프로그램](https://github.com/lahuman/ppt-text2img/releases/download/1.1/ppt-txt2img.exe) |
+**[v1.2 정식 출시](https://github.com/lahuman/ppt-text2img/releases/tag/1.2)** · Windows x64 · Microsoft PowerPoint 필요
 
-v1.2는 아직 게시되지 않았습니다. 아래의 새 UI·기능은 v1.1 다운로드에 포함되지 않습니다.
+[Windows 설치 프로그램](https://github.com/lahuman/ppt-text2img/releases/download/1.2/ppt-txt2img.exe) · [포터블 실행 파일](https://github.com/lahuman/ppt-text2img/releases/download/1.2/ppt-txt2img-portable.exe) · [SHA-256 체크섬](https://github.com/lahuman/ppt-text2img/releases/download/1.2/SHA256SUMS.txt)
 
 - [소개 페이지](https://lahuman.github.io/ppt-text2img) / [페이지 소스](docs/index.html)
 - [릴리즈 노트](RELEASE_NOTES.md)

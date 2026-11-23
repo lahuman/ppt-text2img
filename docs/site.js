@@ -1,5 +1,5 @@
 /* Set published to true only after tag 1.2 and both release assets are public. */
-const release = Object.freeze({ version: "1.2", published: false, stableVersion: "1.1" });
+const release = Object.freeze({ version: "1.2", published: true, stableVersion: "1.2" });
 
 (() => {
   "use strict";
@@ -10,7 +10,7 @@ const release = Object.freeze({ version: "1.2", published: false, stableVersion:
     skip: "Skip to content", navRelease: "What’s new", navWorkflow: "How it works", navDownload: "Download",
     heroTitle: "Different fonts.<br><em>The same impression.</em>",
     heroLead: "Prepare a delivery copy that travels with its design. Convert the text in your PPT into images before sharing it with another PC.",
-    heroCta: "Explore v1.2 <span aria-hidden='true'>↗</span>",
+    heroCta: "Download v1.2 <span aria-hidden='true'>↗</span>",
     compatibility: "Windows 10 / 11 · Microsoft PowerPoint required",
     previewSide: "Keep the details.<br>Share your vision.",
     previewSideBody: "Make your presentation look right,<br>even on a PC without your fonts.",
@@ -48,11 +48,11 @@ const release = Object.freeze({ version: "1.2", published: false, stableVersion:
     limit4Title: "Font license conditions still apply",
     limit4Body: "Turning text into images does not waive the font’s use or distribution license conditions.",
     downloadTitle: "Prepare the copy<br>you’ll present.",
-    downloadLead: "The new interface and reliability improvements are in the v1.2 source. Until it is published, the download below points to the previous release.",
+    downloadLead: "Download the v1.2 installer or portable executable for Windows.",
     allReleases: "Check GitHub Releases ↗", downloadCardTitle: "PPT Text to Image",
     downloadRequirement: "For Windows PCs with Microsoft PowerPoint installed",
-    portableDownload: "Download the portable executable",
-    downloadNote: "The v1.2 interface and improvements shown above are not included in the v1.1 download.",
+    checksums: "SHA-256 checksums", portableDownload: "Download the portable executable",
+    downloadNote: "Both executables require Microsoft PowerPoint.",
     releaseNotes: "Read the full release notes ↗", source: "Source code ↗"
   };
 
